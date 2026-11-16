@@ -292,7 +292,9 @@
 		layout.band
 			? { clock: 'text-5xl', date: 'text-lg', row: 'text-lg', pad: 'p-5', gap: 'gap-1' }
 			: portrait
-				? { clock: 'text-6xl', date: 'text-xl', row: 'text-xl', pad: 'p-5', gap: 'gap-2' }
+				? layout.compact
+					? { clock: 'text-5xl', date: 'text-lg', row: 'text-lg', pad: 'p-4', gap: 'gap-1.5' }
+					: { clock: 'text-6xl', date: 'text-xl', row: 'text-xl', pad: 'p-5', gap: 'gap-2' }
 				: layout.short
 					? { clock: 'text-6xl', date: 'text-xl', row: 'text-xl', pad: 'p-6', gap: 'gap-2' }
 					: {
@@ -348,7 +350,7 @@
 				>
 				<span>{t(sky.label)}</span>
 			</p>
-			<p class="text-sm">
+			<p class="text-sm" class:hidden={layout.compact || layout.band}>
 				{t('weather_today_range', {
 					min: formatWhole(forecast.min, app.formatLocale()),
 					max: formatWhole(forecast.max, app.formatLocale()),
@@ -398,9 +400,10 @@
 				? layout.band && portrait
 					? 'relative min-h-0 flex-1'
 					: portrait
-						? 'relative h-[55%] shrink-0'
+						? 'relative shrink-0'
 						: 'relative min-w-0 flex-1'
 				: 'hidden'}
+			style={hasPhoto && portrait && !layout.band ? `height: ${layout.photoPercent}%` : undefined}
 			data-testid="ambient-photo"
 		>
 			<Slideshow
@@ -428,13 +431,16 @@
 					class="type-figure leading-none font-semibold tracking-tight whitespace-nowrap {size.clock}"
 					data-testid="ambient-clock">{time}</span
 				>
-				<div class="grid gap-1">
+				<div class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
 					<p class="type-dateline text-ink-soft capitalize {size.date}">{date}</p>
 					{@render panelWeather()}
 				</div>
 
 				{#if !layout.band}
-					<div class="border-line mt-2 grid gap-2 border-t pt-3" data-testid="ambient-agenda">
+					<div
+						class="border-line mt-2 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 border-t pt-3"
+						data-testid="ambient-agenda"
+					>
 						<p class="text-ink-soft text-sm font-semibold tracking-widest uppercase">
 							{plan.when === 'tomorrow' ? t('ambient_tomorrow') : t('ambient_today')}
 						</p>
@@ -443,11 +449,14 @@
 								{t('ambient_all_day', { titles: plan.allDay.join(', ') })}
 							</p>
 						{/if}
-						<ul class="grid gap-1" style="--time-column: {timeColumn}">
+						<ul
+							class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1"
+							style="--time-column: {timeColumn}"
+						>
 							{#each rows as event (event.id)}
 								{@const next = event.id === plan.nextId}
 								<li
-									class="-mx-3 flex items-baseline gap-3 rounded-lg px-3 py-1 {size.row} {next
+									class="-mx-3 flex min-w-0 items-baseline gap-3 overflow-hidden rounded-lg px-3 py-1 {size.row} {next
 										? 'bg-accent text-on-accent font-semibold'
 										: 'text-ink'}"
 									data-next={next ? '' : undefined}

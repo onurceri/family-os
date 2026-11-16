@@ -21,22 +21,104 @@ export type SlideshowLayout = {
 	short: boolean;
 	/** A thin band with the clock, date and weather only. */
 	band: boolean;
-	/** Most event rows the panel lists. */
+	/** Portrait only: the panel is tight, so the photo is shorter, the clock smaller, the weather one line. */
+	compact: boolean;
+	/** Portrait only: the photo's share of the height, in percent. */
+	photoPercent: number;
+	/** Most event rows the panel lists; they always fit the panel's height. */
 	rows: number;
 };
+
+/** The most rows of today the panel ever lists. */
+const MOST_ROWS = 5;
+
+/**
+ * What a panel costs in height (px): everything except the event rows (padding, clock, date, a
+ * weather of up to three lines with its attribution, the label, an all-day line and a "+N more"
+ * line, all reserved), and one row with its gap.
+ */
+type Cost = { fixed: number; row: number };
+const COST = {
+	landscape: { fixed: 340, row: 46 },
+	landscapeShort: { fixed: 300, row: 38 },
+	portrait: { fixed: 320, row: 38 },
+	portraitCompact: { fixed: 250, row: 34 },
+} satisfies Record<string, Cost>;
+const PHOTO_PERCENT = { portrait: 55, portraitCompact: 45 };
+
+const fit = (panelHeight: number, cost: Cost) =>
+	Math.max(Math.floor((panelHeight - cost.fixed) / cost.row), 0);
+
+/** The height the panel gets, given the photo's share when the photo is on top. */
+export function panelHeight(viewport: Viewport, photoPercent: number | null): number {
+	return photoPercent === null ? viewport.height : (viewport.height * (100 - photoPercent)) / 100;
+}
 
 export function slideshowLayout(viewport: Viewport, when: Plan['when']): SlideshowLayout {
 	const orientation =
 		viewport.height >= viewport.width || viewport.width < PHONE_PX ? 'portrait' : 'landscape';
 	const short = viewport.height < SHORT_PX;
-	const fits = orientation === 'landscape' ? (short ? 3 : 5) : short ? 2 : 3;
-	if (when === 'none') return { orientation, short, band: true, rows: 0 };
+	// A phone-wide panel lists three rows at most; a wider, taller one up to five.
+	const phone = orientation === 'portrait' && viewport.width < 600;
+	const most = when === 'tomorrow' ? TOMORROW_ROWS : phone ? 3 : MOST_ROWS;
+	if (when === 'none') {
+		return {
+			orientation,
+			short,
+			band: true,
+			compact: false,
+			photoPercent: PHOTO_PERCENT.portrait,
+			rows: 0,
+		};
+	}
+	if (orientation === 'landscape') {
+		const cost = short ? COST.landscapeShort : COST.landscape;
+		const cap = short ? 3 : most;
+		return {
+			orientation,
+			short,
+			band: false,
+			compact: false,
+			photoPercent: PHOTO_PERCENT.portrait,
+			rows: Math.min(cap, Math.max(fit(viewport.height, cost), 1)),
+		};
+	}
+	// Portrait: the usual split when at least three rows fit, else a shorter photo and a smaller panel.
+	const usual = Math.min(most, fit(panelHeight(viewport, PHOTO_PERCENT.portrait), COST.portrait));
+	if (usual >= Math.min(3, most))
+		return {
+			orientation,
+			short,
+			band: false,
+			compact: false,
+			photoPercent: PHOTO_PERCENT.portrait,
+			rows: usual,
+		};
+	const photoPercent = PHOTO_PERCENT.portraitCompact;
 	return {
 		orientation,
 		short,
 		band: false,
-		rows: when === 'tomorrow' ? Math.min(fits, TOMORROW_ROWS) : fits,
+		compact: true,
+		photoPercent,
+		rows: Math.min(
+			most,
+			Math.max(fit(panelHeight(viewport, photoPercent), COST.portraitCompact), 1),
+		),
 	};
+}
+
+/** The height the chosen rows need in the panel, by the same costs: what the layout checks against. */
+export function panelNeeds(layout: SlideshowLayout): number {
+	const cost =
+		layout.orientation === 'landscape'
+			? layout.short
+				? COST.landscapeShort
+				: COST.landscape
+			: layout.compact
+				? COST.portraitCompact
+				: COST.portrait;
+	return cost.fixed + layout.rows * cost.row;
 }
 
 /** How many of `total` events the panel lists and how many it leaves to "+N more". */
