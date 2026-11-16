@@ -134,6 +134,12 @@ export interface SlotProps extends FamosExtensionSlots {
 	 */
 	'device.ambient': Record<string, never>;
 	/**
+	 * A quiet line under the photo switch in a family device's panel in Settings → Devices: why
+	 * the slideshow would show nothing (no photos yet), with where to fix it. It renders nothing
+	 * when there is nothing to say. It is shown to people who hold its `requires`.
+	 */
+	'device.slideshowNote': Record<string, never>;
+	/**
 	 * A full-screen page a family display can show between Today's turns, chosen per display in
 	 * Settings → Devices. Read-only (no links, no buttons): it runs as the display, so it may only
 	 * call routes of view capabilities the display was granted. It must fit its box without

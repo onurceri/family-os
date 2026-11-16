@@ -421,6 +421,8 @@
 				{#if slideshowError}
 					<p class="text-attention mt-2 text-sm font-semibold" role="alert">{slideshowError}</p>
 				{/if}
+				<!-- Why it would show nothing (an extension's note, when it has one). -->
+				<Slot name="device.slideshowNote" />
 			</div>
 		{/if}
 	</SidePanel>

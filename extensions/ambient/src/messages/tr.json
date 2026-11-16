@@ -95,5 +95,6 @@
 	"setup_step_text": "Burada ve aile ekranında hava durumu için",
 	"setup_step_action": "Şehrini seç",
 	"nav_photos_weather": "Fotoğraflar ve hava durumu",
-	"devices_line": "Fotoğrafların, hava durumunun ve ekranlardaki slayt gösterisinin kendi sayfası var:"
+	"devices_line": "Fotoğrafların, hava durumunun ve ekranlardaki slayt gösterisinin kendi sayfası var:",
+	"devices_no_photos": "Henüz fotoğraf yok, bu yüzden slayt gösterisi bir şey göstermez. Şuradan ekleyin:"
 }

@@ -47,6 +47,13 @@ export default defineWebExtension({
 			component: () => import('./DisplaysLink.svelte'),
 		},
 		{
+			// Under a family device's photo switch: no photos, nothing to show.
+			slot: 'device.slideshowNote',
+			id: 'ambient.slideshowNote',
+			requires: 'ambient.manage',
+			component: () => import('./SlideshowNote.svelte'),
+		},
+		{
 			slot: 'setup.step',
 			id: 'ambient.place',
 			order: 10,

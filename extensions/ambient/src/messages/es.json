@@ -96,5 +96,6 @@
 	"setup_step_text": "Para el tiempo aquí y en una pantalla de la familia",
 	"setup_step_action": "Elige tu ciudad",
 	"nav_photos_weather": "Fotos y tiempo",
-	"devices_line": "Las fotos, el tiempo y el pase de diapositivas en las pantallas tienen su propia página:"
+	"devices_line": "Las fotos, el tiempo y el pase de diapositivas en las pantallas tienen su propia página:",
+	"devices_no_photos": "Aún no hay fotos, así que el pase de diapositivas no muestra nada. Añádelas en"
 }

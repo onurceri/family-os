@@ -95,5 +95,6 @@
 	"setup_step_text": "For the weather here and on a family display",
 	"setup_step_action": "Choose your city",
 	"nav_photos_weather": "Photos and weather",
-	"devices_line": "Photos, the weather and the slideshow on screens have their own page:"
+	"devices_line": "Photos, the weather and the slideshow on screens have their own page:",
+	"devices_no_photos": "No photos yet, so the slideshow shows nothing. Add them in"
 }

@@ -95,5 +95,6 @@
 	"setup_step_text": "Voor het weer hier en op een gezinsscherm",
 	"setup_step_action": "Kies je woonplaats",
 	"nav_photos_weather": "Foto’s en weer",
-	"devices_line": "Foto’s, het weer en de diavoorstelling op schermen hebben een eigen pagina:"
+	"devices_line": "Foto’s, het weer en de diavoorstelling op schermen hebben een eigen pagina:",
+	"devices_no_photos": "Nog geen foto’s, dus de diavoorstelling toont niets. Voeg ze toe bij"
 }

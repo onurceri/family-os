@@ -95,5 +95,6 @@
 	"setup_step_text": "Für das Wetter hier und auf einem Familiendisplay",
 	"setup_step_action": "Stadt auswählen",
 	"nav_photos_weather": "Fotos und Wetter",
-	"devices_line": "Fotos, Wetter und die Diashow auf Displays haben eine eigene Seite:"
+	"devices_line": "Fotos, Wetter und die Diashow auf Displays haben eine eigene Seite:",
+	"devices_no_photos": "Noch keine Fotos, die Diashow zeigt also nichts. Füge sie hinzu unter"
 }
