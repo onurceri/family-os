@@ -92,7 +92,7 @@ In the folder with `docker-compose.yml`:
 docker compose pull && docker compose up -d
 ```
 
-FamilyOS writes a backup before any update that changes the database, and keeps people signed in. To stay on a version, set `FAMOS_VERSION` (for example `FAMOS_VERSION=0.1`, which still gets that version's fixes) in a `.env` file next to `docker-compose.yml`. What each version brings is on the [releases page](https://github.com/onurceri/family-os/releases).
+FamilyOS writes a backup before any update that changes the database, and keeps people signed in. To stay on a version, set `FAMOS_VERSION` (for example `FAMOS_VERSION=0.1`, which still gets that version's fixes) in a `.env` file next to `docker-compose.yml`. What each version brings is on the [releases page](https://github.com/onurceri/family-os/releases). Once an admin has looked for updates, or switched the weekly look on, **Settings → Extensions** shows when a newer version is out. Extensions you downloaded update separately, under **Extensions → Updates**, after you update FamilyOS.
 
 ### Building from source
 

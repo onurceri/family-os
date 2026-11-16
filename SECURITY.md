@@ -70,7 +70,7 @@ code it can trust:
   once a week when an admin switched that on; the weekly look never downloads or installs. The index (`index.json` on the project's GitHub Pages) must carry a
   signature by a trust root; the server follows no redirect, reads only https from the index's
   own host, caps every size, and checks each download's size and SHA-256 against the index
-  before it checks the package itself like a file from the family.
+  before it checks the package itself like a file from the family. The signed index also names the newest FamilyOS version; the server only shows it and never applies it.
 - **Workspace source** (`FAMOS_DEV_EXTENSIONS`) is for development only, unsigned, and refused when
   `NODE_ENV=production`.
 

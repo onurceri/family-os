@@ -17,6 +17,7 @@
 	import { getLanguages, t, tDynamic } from '#lib/i18n.svelte.js';
 	import MemberPhoto from '#lib/MemberPhoto.svelte';
 	import SelectField from '#lib/SelectField.svelte';
+	import { REPO } from '#lib/project-links.js';
 	import { runAction } from '#lib/run-action.js';
 	import { session } from '#lib/session.svelte.js';
 	import { toasts } from '#lib/toast.svelte.js';
@@ -41,8 +42,6 @@
 		if (how?.pin) return t('members_signin_pin_family');
 		return t('members_signin_password');
 	});
-	/** Where the documents live; the links open in a new tab and nothing is fetched from them. */
-	const REPO = 'https://github.com/onurceri/family-os';
 	const external = { target: '_blank', rel: 'noopener noreferrer' } as const;
 	const mayManage = $derived(session.can('core.members.manage'));
 
