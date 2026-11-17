@@ -34,6 +34,7 @@ import { migrations } from './store.ts';
 import {
 	addSubscription,
 	listSubscriptions,
+	refreshAllSubscriptions,
 	refreshJob,
 	refreshSubscription,
 	removeSubscription,
@@ -82,6 +83,7 @@ export default defineExtension({
 		updateSubscription,
 		removeSubscription,
 		refreshSubscription,
+		refreshAllSubscriptions,
 	],
 	routes: [
 		listOccurrences,

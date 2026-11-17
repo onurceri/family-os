@@ -253,6 +253,49 @@ describe('subscriptions', () => {
 		).rejects.toMatchObject({ code: 'not_found' });
 	});
 
+	describe('refresh all', () => {
+		const asked = async () =>
+			(
+				await k.ctx.db
+					.withTables<{ queue_jobs: { name: string; status: string; dedupe_key: string | null } }>()
+					.selectFrom('queue_jobs')
+					.select('dedupe_key')
+					.where('status', '=', 'pending')
+					.where('dedupe_key', 'like', 'calendar.refreshNow:%')
+					.execute()
+			).map((r) => r.dedupe_key);
+
+		it('asks once for every subscription, however often it is asked', async () => {
+			k.http.serve(URL_SCHOOL, { text: school });
+			k.http.serve('https://other.example/b.ics', { text: weekly });
+			const a = await add(URL_SCHOOL, { name: 'A' });
+			const b = await add('https://other.example/b.ics', { name: 'B' });
+			const first = await k.runner.invoke('calendar.refreshAllSubscriptions', {}, admin.actor);
+			expect(first).toMatchObject({ status: 'applied', output: { count: 2 } });
+			await k.runner.invoke('calendar.refreshAllSubscriptions', {}, admin.actor);
+			await k.runner.invoke('calendar.refreshSubscription', { id: a.id }, admin.actor);
+			expect((await asked()).sort()).toEqual(
+				[`calendar.refreshNow:${a.id}`, `calendar.refreshNow:${b.id}`].sort(),
+			);
+			const before = k.http.requests.length;
+			await k.worker.drain();
+			expect(k.http.requests.length - before).toBe(2);
+		});
+
+		it('counts none when there are no subscriptions', async () => {
+			const r = await k.runner.invoke('calendar.refreshAllSubscriptions', {}, admin.actor);
+			expect(r).toMatchObject({ status: 'applied', output: { count: 0 } });
+			expect(await asked()).toEqual([]);
+		});
+
+		it('is for people who manage the calendar', async () => {
+			const mum = await k.member('member');
+			await expect(
+				k.runner.invoke('calendar.refreshAllSubscriptions', {}, mum.actor),
+			).rejects.toMatchObject({ code: 'forbidden' });
+		});
+	});
+
 	it('is for people who manage the calendar', async () => {
 		const mum = await k.member('member');
 		for (const [id, input] of [

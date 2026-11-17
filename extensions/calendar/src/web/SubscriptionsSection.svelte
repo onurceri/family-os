@@ -30,6 +30,7 @@
 	import {
 		addSubscription,
 		loadSubscriptions,
+		refreshAllSubscriptions,
 		refreshSubscription,
 		removeSubscription,
 		updateSubscription,
@@ -180,6 +181,15 @@
 		}
 	}
 
+	async function refreshAll() {
+		try {
+			const count = await refreshAllSubscriptions();
+			app.toast(t('sub_refresh_all_requested', { count }));
+		} catch {
+			app.toast(t('error'));
+		}
+	}
+
 	async function remove(sub: Subscription) {
 		try {
 			await removeSubscription(sub.id);
@@ -219,6 +229,11 @@
 
 <Section label={t('subs_title')} count={loaded ? subs.length : undefined}>
 	{#snippet actions()}
+		{#if subs.length >= 2}
+			<Button variant="ghost" size="sm" onclick={refreshAll}
+				><RefreshCw class="size-4" aria-hidden="true" />{t('sub_refresh_all')}</Button
+			>
+		{/if}
 		<Button variant="ghost" size="sm" onclick={startAdd}
 			><Plus class="size-4" aria-hidden="true" />{t('sub_add')}</Button
 		>

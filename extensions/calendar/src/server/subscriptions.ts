@@ -248,6 +248,26 @@ export const refreshSubscription = defineAction({
 	},
 });
 
+export const refreshAllSubscriptions = defineAction({
+	id: 'calendar.refreshAllSubscriptions',
+	title: 'Fetch every external calendar again now',
+	input: z.object({}),
+	output: z.object({ count: z.number().int() }),
+	requires: calendarManage.id,
+	approval: 'never',
+	async run(uow) {
+		const rows = await events(uow.db)
+			.selectFrom('calendar_subscriptions')
+			.select('id')
+			.orderBy('created_at')
+			.execute();
+		for (const { id } of rows) {
+			await refreshNow((job, payload, o) => uow.enqueue(job, payload, o), id);
+		}
+		return { count: rows.length };
+	},
+});
+
 export const listSubscriptions = defineRoute({
 	method: 'get',
 	path: '/subscriptions',
