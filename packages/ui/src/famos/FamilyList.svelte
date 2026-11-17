@@ -135,6 +135,7 @@
 	}
 	.strip li {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		justify-items: center;
 		gap: 6px;
 		text-align: center;
@@ -142,9 +143,13 @@
 	.strip .ringed {
 		margin: 4px 0 0;
 	}
+	/*
+	 * One column as wide as the tile, its lines stretched (not centred: a centred line is as wide
+	 * as its longest word, so a long name would grow into the next tile). The text is centred.
+	 */
 	.strip .t {
-		justify-items: center;
-		max-width: 100%;
+		grid-template-columns: minmax(0, 1fr);
+		width: 100%;
 	}
 	.strip b {
 		font-size: 0.75rem;
