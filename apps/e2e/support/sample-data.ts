@@ -3,10 +3,11 @@ import { answer, mention, on } from './drafts.ts';
 import type { FakeModel } from './fake-model.ts';
 import { api, FAMILY_TIME_ZONE, nextWeek, shareText } from './fixtures.ts';
 import { createMember } from './members.ts';
+import { now } from './today.ts';
 
 const day = (offset: number) =>
 	new Intl.DateTimeFormat('en-CA', { timeZone: FAMILY_TIME_ZONE }).format(
-		new Date(Date.now() + offset * 86_400_000),
+		new Date(now() + offset * 86_400_000),
 	);
 
 /** The ids of the records that have a page of their own. */

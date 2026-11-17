@@ -1,5 +1,6 @@
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { now } from './today.ts';
 
 /** What a fake Home Assistant answers for one entity. */
 export type FakeEntity = {
@@ -20,7 +21,7 @@ export async function startFakeHomeAssistant(
 		entity_id: id,
 		state: entity.state,
 		attributes: entity.attributes ?? {},
-		last_changed: new Date().toISOString(),
+		last_changed: new Date(now()).toISOString(),
 	});
 	const server = http.createServer((req, res) => {
 		const send = (status: number, json: unknown) =>

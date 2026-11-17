@@ -1,5 +1,6 @@
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { now } from './today.ts';
 
 /** Where the server's own `node:https` and DNS are pointed at the fake (see below). */
 export const PRELOAD = new URL('./open-meteo-preload.ts', import.meta.url).pathname;
@@ -15,7 +16,7 @@ const HOUR = 3600;
 export async function startFakeOpenMeteo() {
 	const server = http.createServer((req, res) => {
 		if (!req.url?.startsWith('/v1/forecast')) return void res.writeHead(404).end('{}');
-		const first = Math.floor(Date.now() / 1000 / HOUR) * HOUR - 48 * HOUR;
+		const first = Math.floor(now() / 1000 / HOUR) * HOUR - 48 * HOUR;
 		const time = Array.from({ length: 96 }, (_, i) => first + i * HOUR);
 		// Warmest mid-afternoon (about 19 degrees), coolest before dawn (about 11).
 		const temperature = time.map(

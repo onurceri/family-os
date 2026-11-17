@@ -9,6 +9,7 @@ const ROOT = resolve(import.meta.dirname, '../../..');
 // The image's entry point: the supervisor, which starts the server again when it asks to.
 const SERVER = join(ROOT, 'apps/server/dist/famos.mjs');
 const WEB = join(ROOT, 'apps/web/build');
+const FIXED_CLOCK = join(import.meta.dirname, 'fixed-clock-preload.ts');
 export const SETUP_CODE = 'e2e-setup-code';
 
 /**
@@ -82,6 +83,10 @@ export async function startFamilyOS(options: {
 		FAMOS_AI_MODEL: 'fake',
 		// Suggestions notify after 30 s in production; a short delay keeps specs fast.
 		FAMOS_NOTIFY_DELAY_MS: '500',
+		// The README pictures run the server on one fixed day (support/today.ts).
+		...(process.env.FAMOS_E2E_FIXED_NOW && {
+			NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --import ${FIXED_CLOCK}`.trim(),
+		}),
 		...(options.telegramApiRoot && { FAMOS_TELEGRAM_API_ROOT: options.telegramApiRoot }),
 		...(options.emailFakeDir && { FAMOS_EMAIL_FAKE_DIR: options.emailFakeDir }),
 		...(options.behindProxy && { FAMOS_TRUSTED_PROXIES: '127.0.0.1' }),
