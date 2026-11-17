@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { dateLocale, formatTime } from '@famos/time';
+	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { provideAppContext } from '@famos/ui/app';
 	import { trackWork } from '@famos/ui/famos';
 	import type { SlotContribution } from '@famos/ui/slots';
 	import { api } from '#lib/api.js';
+	import SleepCover from '#lib/SleepCover.svelte';
 	import { appearance } from '#lib/appearance.svelte.js';
 	import { browserFormatLocale } from '#lib/family.svelte.js';
 	import { memberPhotoUrl } from '#lib/member-photo.js';
@@ -54,6 +56,8 @@
 		rotation: (RotationConfig & { pages: string[] }) | null;
 		/** This display's text size, chosen in Settings (Theme, Displays). */
 		textSize: TextSize;
+		/** The hours this screen goes dark, in the family's time zone; null never sleeps. */
+		sleep: { from: string; until: string } | null;
 	};
 	type Member = { id: string; displayName: string; color: string; photoUrl: string | null };
 
@@ -294,7 +298,14 @@
 	let rotation = $state<RotationState>(startRotation(Date.now()));
 	/** The ambient layers that cover the screen now: the rotation holds, on Today, while any does. */
 	const covering = new SvelteSet<string>();
-	const held = $derived(covering.size > 0);
+	/** The screen is in its dark hours: black over everything, and no photos are mounted. */
+	let asleep = $state(false);
+	const held = $derived(covering.size > 0 || asleep);
+	// Black, the rotation holds on Today; it starts again from Today when the screen wakes.
+	$effect(() => {
+		void asleep;
+		untrack(() => (rotation = startRotation(Date.now())));
+	});
 	/** 0 is Today; a screen whose page is gone is Today too. */
 	const shownIndex = $derived(rotation.index <= pages.length ? rotation.index : 0);
 	const onToday = $derived(shownIndex === 0);
@@ -528,7 +539,7 @@
 		</p>
 
 		<!-- Ambient mode: contributed by an extension, covers Today after a while idle. -->
-		{#each ambient as layer (layer.id)}
+		{#each asleep ? [] : ambient as layer (layer.id)}
 			{#await trackWork(layer.component()) then mod}
 				<mod.default
 					{time}
@@ -538,6 +549,13 @@
 				/>
 			{/await}
 		{/each}
+		<SleepCover
+			hours={me?.sleep ?? null}
+			timeZone={me?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone}
+			locale={shownDateLocale()}
+			hourCycle={me?.hourCycle ?? 'h23'}
+			bind:dark={asleep}
+		/>
 	</main>
 {/if}
 

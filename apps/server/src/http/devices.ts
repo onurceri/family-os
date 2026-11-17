@@ -5,7 +5,9 @@ import {
 	type DeviceService,
 	type Kernel,
 	RotationSchema,
+	SleepWindowSchema,
 	STYLE_IDS,
+	sleepOf,
 	TEXT_SIZES,
 	toDevice,
 } from '@famos/core';
@@ -340,6 +342,8 @@ function mountDisplayRoutes(
 						rotation: RotationSchema.nullable(),
 						/** This display's text size, chosen in Settings (Theme, Displays). */
 						textSize: z.enum(TEXT_SIZES),
+						/** The hours this screen goes dark, in the family's time zone; null never sleeps. */
+						sleep: SleepWindowSchema.nullable(),
 					}),
 				),
 			},
@@ -379,6 +383,7 @@ function mountDisplayRoutes(
 				style: look.style,
 				hidden: look.hidden,
 				textSize: look.textSize,
+				sleep: await sleepOf(kernel.ctx.db, actor.deviceId),
 				rotation: await kernel.themes.rotationOf(kernel.ctx.db, actor.deviceId),
 			},
 			200,

@@ -23,6 +23,7 @@ import { createSetup } from './core-extension/setup.ts';
 import { createSignIn } from './core-extension/sign-in.ts';
 import { createSuggestions } from './core-extension/suggestions.ts';
 import { today } from './core-extension/today.ts';
+import { listDeviceSleep, setDeviceSleep } from './device-sleep.ts';
 import { listDeviceSlideshow, setDeviceSlideshow } from './device-slideshow.ts';
 import { scheduleExpiry } from './draft-expiry.ts';
 import { scheduleUpdateCheck } from './extension-find.ts';
@@ -121,6 +122,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			...memory.actions,
 			...admin.actions,
 			setDeviceSlideshow,
+			setDeviceSleep,
 			...createAiSettingsActions({ settings: deps.aiSettings }),
 			...createChannelActions({
 				backups: deps.backupSettings,
@@ -161,6 +163,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			setup.setupStatus,
 			setup.setup,
 			signIn.me,
+			signIn.deviceSleep,
 			signIn.myAccess,
 			settings.listFeatures,
 			settings.listAiAreas,
@@ -174,6 +177,7 @@ export function createCoreExtension(deps: CoreExtensionDeps) {
 			signIn.listDevices,
 			signIn.currentDevice,
 			listDeviceSlideshow,
+			listDeviceSleep,
 			signIn.setPin,
 			signIn.setPassword,
 			signIn.signOutEverywhere,

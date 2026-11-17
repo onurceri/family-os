@@ -65,3 +65,34 @@ test('a family device shows the photos after a while; a tap brings the page back
 	await expect(tablet.getByTestId('ambient')).toHaveCount(0);
 	await context.close();
 });
+
+test('a family device in its dark hours is black until a tap, which presses nothing', async ({
+	page,
+	browser,
+	family,
+}) => {
+	await setUpAndSignIn(page);
+	const { context, page: tablet } = await signInAs(browser, family, ADMIN);
+	const device = await api<{ id: string }>(tablet, 'POST', '/api/v1/core/devices/trust', {
+		name: 'Bedroom frame',
+	});
+	// Hours that cover the whole day but the last minute: it is dark whenever this runs.
+	await api(page, 'POST', '/api/v1/actions/core.setDeviceSleep', {
+		deviceId: device.id,
+		sleep: { from: '00:00', until: '23:59' },
+	});
+	await tablet.goto('/add');
+	const cover = tablet.getByRole('dialog', { name: /Screen is dark until/ });
+	await expect(cover).toBeVisible();
+
+	// A tap takes the black away and presses nothing under it.
+	const sent: string[] = [];
+	tablet.on('request', (r) => {
+		if (r.method() === 'POST') sent.push(new URL(r.url()).pathname);
+	});
+	await tablet.touchscreen.tap(200, 300);
+	await expect(cover).toHaveCount(0);
+	await expect(tablet.getByLabel('Something to add')).toBeVisible();
+	expect(sent).toEqual([]);
+	await context.close();
+});

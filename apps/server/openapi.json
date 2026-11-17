@@ -2257,6 +2257,26 @@
 												"large",
 												"larger"
 											]
+										},
+										"sleep": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"from": {
+													"type": "string",
+													"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+												},
+												"until": {
+													"type": "string",
+													"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+												}
+											},
+											"required": [
+												"from",
+												"until"
+											]
 										}
 									},
 									"required": [
@@ -2275,7 +2295,8 @@
 										"style",
 										"hidden",
 										"rotation",
-										"textSize"
+										"textSize",
+										"sleep"
 									]
 								}
 							}
@@ -16230,10 +16251,31 @@
 											"properties": {
 												"slideshow": {
 													"type": "boolean"
+												},
+												"sleep": {
+													"type": [
+														"object",
+														"null"
+													],
+													"properties": {
+														"from": {
+															"type": "string",
+															"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+														},
+														"until": {
+															"type": "string",
+															"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+														}
+													},
+													"required": [
+														"from",
+														"until"
+													]
 												}
 											},
 											"required": [
-												"slideshow"
+												"slideshow",
+												"sleep"
 											]
 										}
 									},
@@ -16253,6 +16295,305 @@
 										"disabledExtensions",
 										"nextUp",
 										"device"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/core/device/sleep": {
+			"get": {
+				"operationId": "core.getDeviceSleep",
+				"summary": "The hours this family device goes dark, for its sign-in page",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The hours this family device goes dark, for its sign-in page",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"sleep": {
+											"type": [
+												"object",
+												"null"
+											],
+											"properties": {
+												"from": {
+													"type": "string",
+													"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+												},
+												"until": {
+													"type": "string",
+													"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+												}
+											},
+											"required": [
+												"from",
+												"until"
+											]
+										},
+										"timeZone": {
+											"type": "string"
+										},
+										"formatLocale": {
+											"type": "string"
+										},
+										"hourCycle": {
+											"type": "string",
+											"enum": [
+												"h12",
+												"h23"
+											]
+										}
+									},
+									"required": [
+										"sleep",
+										"timeZone",
+										"formatLocale",
+										"hourCycle"
 									]
 								}
 							}
@@ -20018,6 +20359,291 @@
 									},
 									"required": [
 										"off"
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/core/devices/sleep": {
+			"get": {
+				"operationId": "core.listDeviceSleep",
+				"summary": "The hours each screen and family device goes dark (devices without hours never do)",
+				"tags": [
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "The hours each screen and family device goes dark (devices without hours never do)",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"devices": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"deviceId": {
+														"type": "string"
+													},
+													"from": {
+														"type": "string"
+													},
+													"until": {
+														"type": "string"
+													}
+												},
+												"required": [
+													"deviceId",
+													"from",
+													"until"
+												]
+											}
+										}
+									},
+									"required": [
+										"devices"
 									]
 								}
 							}
@@ -53469,6 +54095,384 @@
 													"required": [
 														"deviceId",
 														"on"
+													]
+												}
+											},
+											"required": [
+												"status",
+												"output"
+											]
+										},
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"drafted"
+													]
+												},
+												"draftId": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"status",
+												"draftId"
+											]
+										}
+									]
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Invalid request",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Not signed in",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"403": {
+						"description": "Not allowed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {},
+												"reason": {
+													"type": "string",
+													"enum": [
+														"capability",
+														"approval",
+														"display",
+														"sign_in",
+														"ai",
+														"critical",
+														"area"
+													]
+												},
+												"capability": {
+													"type": "string"
+												}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"409": {
+						"description": "Conflict",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"422": {
+						"description": "The Idempotency-Key was used for a different action",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					},
+					"429": {
+						"description": "Limit reached",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "object",
+											"properties": {
+												"code": {
+													"type": "string"
+												},
+												"message": {
+													"type": "string"
+												},
+												"details": {}
+											},
+											"required": [
+												"code",
+												"message"
+											]
+										}
+									},
+									"required": [
+										"error"
+									]
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/api/v1/actions/core.setDeviceSleep": {
+			"post": {
+				"operationId": "core.setDeviceSleep",
+				"summary": "Set the hours a screen or a family device goes dark, or turn them off",
+				"tags": [
+					"actions",
+					"core"
+				],
+				"security": [
+					{
+						"session": []
+					}
+				],
+				"parameters": [
+					{
+						"schema": {
+							"type": "string",
+							"pattern": "^[A-Za-z0-9_-]{1,100}$",
+							"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days."
+						},
+						"required": false,
+						"description": "Makes the call safe to repeat (1-100 characters: letters, digits, `_`, `-`). The same key for the same action returns the first result without running it again (response header `Idempotent-Replayed: true`); for another action it is refused with 422. Keys are kept 7 days.",
+						"name": "idempotency-key",
+						"in": "header"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"deviceId": {
+										"type": "string",
+										"pattern": "^device_[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+									},
+									"sleep": {
+										"type": [
+											"object",
+											"null"
+										],
+										"properties": {
+											"from": {
+												"type": "string",
+												"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+											},
+											"until": {
+												"type": "string",
+												"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+											}
+										},
+										"required": [
+											"from",
+											"until"
+										]
+									}
+								},
+								"required": [
+									"deviceId",
+									"sleep"
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Applied, or stored as a draft for approval",
+						"content": {
+							"application/json": {
+								"schema": {
+									"oneOf": [
+										{
+											"type": "object",
+											"properties": {
+												"status": {
+													"type": "string",
+													"enum": [
+														"applied"
+													]
+												},
+												"output": {
+													"type": "object",
+													"properties": {
+														"deviceId": {
+															"type": "string"
+														},
+														"sleep": {
+															"type": [
+																"object",
+																"null"
+															],
+															"properties": {
+																"from": {
+																	"type": "string",
+																	"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+																},
+																"until": {
+																	"type": "string",
+																	"pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+																}
+															},
+															"required": [
+																"from",
+																"until"
+															]
+														}
+													},
+													"required": [
+														"deviceId",
+														"sleep"
 													]
 												}
 											},

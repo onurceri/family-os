@@ -12,6 +12,8 @@
 	import { contributions } from '#lib/extensions.js';
 	import { t } from '#lib/i18n.svelte.js';
 	import { needingNames, wastedWithoutNames } from './display-options.js';
+	import SleepField from './SleepField.svelte';
+	import { sleepProblem } from './sleep-field.js';
 
 	/**
 	 * What a display is told at pairing, and can be changed later: its name, what it may
@@ -26,6 +28,9 @@
 		name = $bindable(),
 		capabilities = $bindable(),
 		showNames = $bindable(),
+		sleepOn = $bindable(),
+		sleepFrom = $bindable(),
+		sleepUntil = $bindable(),
 		error = null,
 		onsubmit,
 		form = $bindable(),
@@ -35,6 +40,9 @@
 		name: string;
 		capabilities: string[];
 		showNames: boolean;
+		sleepOn: boolean;
+		sleepFrom: string;
+		sleepUntil: string;
 		error?: string | null;
 		onsubmit: () => void;
 		form?: HTMLFormElement | undefined;
@@ -62,7 +70,7 @@
 	onsubmit={(event) => {
 		event.preventDefault();
 		tried = true;
-		if (!name.trim()) {
+		if (!name.trim() || sleepProblem({ on: sleepOn, from: sleepFrom, until: sleepUntil })) {
 			void focusFirstInvalid(event.currentTarget);
 			return;
 		}
@@ -81,6 +89,7 @@
 		/>
 		<FieldError for="{idPrefix}-name" error={nameError} />
 	</div>
+	<SleepField {idPrefix} bind:on={sleepOn} bind:from={sleepFrom} bind:until={sleepUntil} />
 	<fieldset class="grid gap-2">
 		<legend class="text-ink-soft mb-1 text-xs font-bold tracking-[0.06em] uppercase"
 			>{t('devices_display_shows')}</legend

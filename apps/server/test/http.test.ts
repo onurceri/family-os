@@ -285,7 +285,7 @@ describe('HTTP API', () => {
 		// On a family device it is on by default, and an admin can turn it off and on again.
 		const { device: tablet, deviceCookie } = await trustDevice(cookie);
 		const onTablet = `${cookie}; ${deviceCookie}`;
-		expect(await device(onTablet)).toEqual({ slideshow: true });
+		expect(await device(onTablet)).toEqual({ slideshow: true, sleep: null });
 		const off = await call(
 			'POST',
 			'/api/v1/actions/core.setDeviceSlideshow',
@@ -293,7 +293,7 @@ describe('HTTP API', () => {
 			onTablet,
 		);
 		expect(off.status).toBe(200);
-		expect(await device(onTablet)).toEqual({ slideshow: false });
+		expect(await device(onTablet)).toEqual({ slideshow: false, sleep: null });
 		expect((await call('GET', '/api/v1/core/devices/slideshow', undefined, cookie)).body).toEqual({
 			off: [tablet.id],
 		});
@@ -303,7 +303,7 @@ describe('HTTP API', () => {
 			{ deviceId: tablet.id, on: true },
 			cookie,
 		);
-		expect(await device(onTablet)).toEqual({ slideshow: true });
+		expect(await device(onTablet)).toEqual({ slideshow: true, sleep: null });
 		// The device cookie alone is no session.
 		expect((await call('GET', '/api/v1/core/me', undefined, deviceCookie)).status).toBe(401);
 	});
@@ -1098,6 +1098,65 @@ describe('family displays', () => {
 			(await call('POST', '/api/v1/actions/core.setMyStyle', { style: 'lanes' }, displayCookie))
 				.status,
 		).toBe(401);
+	});
+
+	it('tells a display its dark hours; it cannot set them, and a family device is told before sign-in', async () => {
+		const { cookie } = await setupAndSignIn();
+		const { displayCookie, deviceId } = await pairDisplay(cookie);
+		const sleep = async () =>
+			(await call('GET', '/api/v1/core/displays/me', undefined, displayCookie)).body.sleep;
+		expect(await sleep()).toBeNull();
+		const night = { from: '22:00', until: '07:00' };
+		const set = await call(
+			'POST',
+			'/api/v1/actions/core.setDeviceSleep',
+			{ deviceId, sleep: night },
+			cookie,
+		);
+		expect(set.status).toBe(200);
+		expect(await sleep()).toEqual(night);
+		expect((await call('GET', '/api/v1/core/devices/sleep', undefined, cookie)).body).toEqual({
+			devices: [{ deviceId, ...night }],
+		});
+		// The same time twice is refused with the reason under the field.
+		const same = await call(
+			'POST',
+			'/api/v1/actions/core.setDeviceSleep',
+			{ deviceId, sleep: { from: '22:00', until: '22:00' } },
+			cookie,
+		);
+		expect(same.status).toBe(400);
+		// A display runs no actions and cannot read the admin's list.
+		expect(
+			(
+				await call(
+					'POST',
+					'/api/v1/actions/core.setDeviceSleep',
+					{ deviceId, sleep: null },
+					displayCookie,
+				)
+			).status,
+		).toBe(401);
+		expect((await call('GET', '/api/v1/core/devices/sleep', undefined, displayCookie)).status).toBe(
+			403,
+		);
+
+		// A family device reads its own hours with nobody signed in; a display or a plain browser gets
+		// nothing from this route.
+		const { device: tablet, deviceCookie } = await trustDevice(cookie);
+		await call(
+			'POST',
+			'/api/v1/actions/core.setDeviceSleep',
+			{ deviceId: tablet.id, sleep: night },
+			cookie,
+		);
+		const before = await call('GET', '/api/v1/core/device/sleep', undefined, deviceCookie);
+		expect(before.status).toBe(200);
+		expect(before.body).toMatchObject({ sleep: night });
+		expect((await call('GET', '/api/v1/core/device/sleep')).status).toBe(401);
+		expect((await call('GET', '/api/v1/core/device/sleep', undefined, displayCookie)).status).toBe(
+			401,
+		);
 	});
 
 	it("tells a display the pages it shows between Today's turns; it cannot choose them", async () => {

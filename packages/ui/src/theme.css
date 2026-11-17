@@ -271,6 +271,13 @@ html[data-text-size="larger"] {
  * would be merged into the second by the stylesheet minifier, and with a `var()` in the value an
  * older browser keeps the `dvh` line it cannot use, so the height is lost.)
  */
+/*
+ * The dark screen of a device's sleep hours. Pure black on purpose and the same under every theme
+ * and in day mode: it exists to put no light in a dark room, so it is not a theme token.
+ */
+@utility bg-screen-off {
+	background-color: #000;
+}
 @utility h-viewport {
 	height: 100vh;
 	@supports (height: 100dvh) {

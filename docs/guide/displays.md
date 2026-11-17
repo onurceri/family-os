@@ -7,7 +7,7 @@ A display (a **screen** in the app) is a wall tablet or TV that shows today's pl
 1. Open **Settings → Family → Devices**, press **Add a device** and choose **A screen for the wall or a TV**.
 2. Open `<your FamilyOS address>/display` in the screen's browser (the panel shows the address and a QR code). Press **Next**.
 3. The screen shows **Connect this screen** and a code like `ABCD-EFGH`. Type it under **Code on the screen** and press **Next**.
-4. Give it a **Name of the screen** ("Hallway"), untick what it should not show ([below](#what-it-shows)) and press **Connect the screen**.
+4. Give it a **Name of the screen** ("Hallway"), untick what it should not show ([below](#what-it-shows)), optionally turn on **Dark screen at night** ([Sleep hours](#sleep-hours)) and press **Connect the screen**.
 
 The panel says **Hallway is connected** after a few seconds; closing it does not stop the connection. Instead of steps 2–3 you can scan the screen's QR code with your phone: it opens step 4 with the code filled in.
 
@@ -27,7 +27,7 @@ A **family device** (the kitchen tablet) lets people pick their name and sign in
 
 1. Press **Add a device** and choose **A tablet or phone the family shares**.
 2. Open FamilyOS on it at the address shown and sign in once with your own email and password.
-3. Open **Settings → Family → Devices** on it, give it a name ("Kitchen tablet") and press **Make this a family device**.
+3. Open **Settings → Family → Devices** on it, give it a name ("Kitchen tablet") and press **Make this a family device**. The same step offers **Dark screen at night** ([Sleep hours](#sleep-hours)).
 
 **This device** at the top of **Devices** says whether you are on a family device; **Stop using** makes it ordinary again.
 
@@ -35,7 +35,7 @@ A **family device** (the kitchen tablet) lets people pick their name and sign in
 
 ## The list of devices
 
-**The family's devices** has a row per device: **Screen** or **Family device**, name, last used. Tap a row to rename it or (screens) change what it may show, its look and its pages, then **Save**. A family device's panel has the **Photos when nobody is using it** switch, which applies at once.
+**The family's devices** has a row per device: **Screen** or **Family device**, name, last used. Tap a row to rename it or (screens) change what it may show, its look and its pages, then **Save**. A family device's panel has **Dark screen at night** and the **Photos when nobody is using it** switch, which apply at once. A screen's panel has **Dark screen at night** under its name, saved with **Save**.
 
 **Remove**, then **Tap again to remove**: the device stops working at once (a screen shows a new code). Do this when a device is lost or sold.
 
@@ -95,6 +95,14 @@ Arrows move a page, the cross removes it. Once a page is added:
 - A touch holds the screen where it is; after the time you set it returns to Today. Swipe sideways to move, or tap a dot. Nothing on a page can be pressed.
 - A screen with pages is never taken over by ambient mode: photos come as the **Photos** page.
 
+## Sleep hours
+
+A screen or a family device can go fully black at night, so a screen in a bedroom does not light the room. It is off at first. Turn on **Dark screen at night** in the step where you add the device, or later in **Settings → Family → Devices**, in the device's panel (the screen's panel has it right under the name), and choose **From** and **Until** (22:00 to 07:00 at first). The times are in the family's time zone, and the hours may cross midnight (23:00 to 06:30). Two equal times are refused.
+
+During the hours the device shows plain black over everything, even a dialog, whatever the theme and even in day mode; no photos load. A touch (or a key) wakes it for **1 minute** and presses nothing: the app is back exactly as it was and whoever was signed in stays signed in. A minute without a touch, click, key, mouse wheel or mouse move makes it black again, until the hours end; then it wakes by itself. A family device with nobody signed in sleeps too. A change in Settings reaches the device without a reload. Personal phones and computers never sleep, and a screen that is still waiting to be connected does not either.
+
+A browser cannot switch the screen's backlight off. On most LCD screens black still glows a little, so for a completely dark room also lower the brightness or use the device's own screen-off schedule.
+
 ## Photos and weather
 
 **Settings → Family → Photos and weather** (admins; **Devices** links to it).
@@ -117,6 +125,6 @@ Arrows move a page, the cross removes it. Once a page is added:
 
 - Open `/display`, then full screen (Android Chrome: **Add to Home screen**; iPad: Share, **Add to Home Screen**).
 - Keep it awake and plugged in: turn off auto-lock or sleep, or use guided access or kiosk mode.
-- Lower the brightness at night, or schedule the screen off.
+- Turn on **Dark screen at night** ([Sleep hours](#sleep-hours)) for a screen that lights a bedroom, and also lower the brightness or schedule the device's own screen off: black still glows a little.
 - An old tablet, Android photo frame or fridge browser works if its browser is Chrome (or Android WebView) 106 or newer, Safari 16.4 or newer, or Firefox 114 or newer. If it says FamilyOS could not open, update the browser or the system, then tap **Try again**.
 - If it shows an old state, reload; it retries by itself when the network returns.
