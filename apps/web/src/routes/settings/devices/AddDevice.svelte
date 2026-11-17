@@ -26,6 +26,8 @@
 	import { onEvent } from '#lib/realtime.js';
 	import QrCode from '#lib/QrCode.svelte';
 	import DisplayForm from './DisplayForm.svelte';
+	import SleepField from './SleepField.svelte';
+	import { DEFAULT_FROM, DEFAULT_UNTIL, sleepProblem, sleepToSave } from './sleep-field.js';
 	import { initialGrant } from './display-options.js';
 	import { screenAddress } from './screen-address.js';
 
@@ -69,6 +71,11 @@
 	let name = $state('');
 	let caps = $state<string[]>([]);
 	let showNames = $state(false);
+	let sleepOn = $state(false);
+	let sleepFrom = $state(DEFAULT_FROM);
+	let sleepUntil = $state(DEFAULT_UNTIL);
+	/** Hours chosen with a screen are saved once it has connected; only once. */
+	let sleepSaved = false;
 	let error = $state<string | null>(null);
 	let busy = $state(false);
 	/** The name of what was added, for the last step. */
@@ -104,6 +111,10 @@
 		step = start?.kind === 'screen' && start.code ? 3 : start?.kind === 'shared' ? 3 : 1;
 		name = '';
 		showNames = false;
+		sleepOn = false;
+		sleepFrom = DEFAULT_FROM;
+		sleepUntil = DEFAULT_UNTIL;
+		sleepSaved = false;
 		error = null;
 		added = '';
 		pairingId = null;
@@ -138,6 +149,17 @@
 	/** A done step opens again, until the flow is finished. */
 	function reopen(n: number) {
 		if (step < 4) step = n;
+	}
+
+	/** The dark hours chosen in the steps: saved for the device once it exists. */
+	async function saveSleep(deviceId: string): Promise<boolean> {
+		const sleep = sleepToSave({ on: sleepOn, from: sleepFrom, until: sleepUntil });
+		if (!sleep) return true;
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setDeviceSleep', { body: { deviceId, sleep } }),
+			{ onError: (failure) => (error = failure.message) },
+		);
+		return result.ok;
 	}
 
 	async function connect() {
@@ -180,7 +202,13 @@
 		if (!res.data || id !== pairingId) return;
 		pairing = res.data.status;
 		answering = res.data.status === 'waiting' ? res.data.answering : true;
-		if (res.data.status === 'connected') onchanged();
+		if (res.data.status === 'connected') {
+			if (!sleepSaved) {
+				sleepSaved = true;
+				await saveSleep(res.data.deviceId);
+			}
+			onchanged();
+		}
 	}
 
 	// The screen claims the code on its next poll (every few seconds); the device's event usually
@@ -214,6 +242,8 @@
 			onError: (failure) => (error = failure.message),
 		});
 		if (result.ok) {
+			// The device exists now; its dark hours are saved with it.
+			await saveSleep(result.data.id);
 			added = name;
 			step = 4;
 			onchanged();
@@ -351,6 +381,9 @@
 						bind:name
 						bind:capabilities={caps}
 						bind:showNames
+						bind:sleepOn
+						bind:sleepFrom
+						bind:sleepUntil
 						{error}
 						onsubmit={connect}
 					/>
@@ -436,7 +469,10 @@
 							onsubmit={(e) => {
 								e.preventDefault();
 								triedName = true;
-								if (!name.trim()) {
+								if (
+									!name.trim() ||
+									sleepProblem({ on: sleepOn, from: sleepFrom, until: sleepUntil })
+								) {
 									void focusFirstInvalid(e.currentTarget);
 									return;
 								}
@@ -455,6 +491,12 @@
 								/>
 								<FieldError for="device-name" error={nameError} />
 							</div>
+							<SleepField
+								idPrefix="trust"
+								bind:on={sleepOn}
+								bind:from={sleepFrom}
+								bind:until={sleepUntil}
+							/>
 							{#if error}<p class="text-attention text-sm font-semibold" role="alert">
 									{error}
 								</p>{/if}

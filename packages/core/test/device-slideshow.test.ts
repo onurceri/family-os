@@ -16,7 +16,7 @@ describe('photos on a family device when nobody is using it', () => {
 		const hall = (await k.devices.trust(admin, { name: 'Hall tablet' })).device;
 		const on = { id: kitchen.id, name: kitchen.name };
 
-		expect(await meOn(admin, on)).toEqual({ slideshow: true });
+		expect(await meOn(admin, on)).toEqual({ slideshow: true, sleep: null });
 		expect(await k.route('core.listDeviceSlideshow').call({ actor: admin })).toEqual({ off: [] });
 
 		const result = await k.runner.invoke(
@@ -28,14 +28,17 @@ describe('photos on a family device when nobody is using it', () => {
 			status: 'applied',
 			output: { deviceId: kitchen.id, on: false },
 		});
-		expect(await meOn(admin, on)).toEqual({ slideshow: false });
-		expect(await meOn(admin, { id: hall.id, name: hall.name })).toEqual({ slideshow: true });
+		expect(await meOn(admin, on)).toEqual({ slideshow: false, sleep: null });
+		expect(await meOn(admin, { id: hall.id, name: hall.name })).toEqual({
+			slideshow: true,
+			sleep: null,
+		});
 		expect(await k.route('core.listDeviceSlideshow').call({ actor: admin })).toEqual({
 			off: [kitchen.id],
 		});
 
 		await k.runner.invoke('core.setDeviceSlideshow', { deviceId: kitchen.id, on: true }, admin);
-		expect(await meOn(admin, on)).toEqual({ slideshow: true });
+		expect(await meOn(admin, on)).toEqual({ slideshow: true, sleep: null });
 		expect(await k.route('core.listDeviceSlideshow').call({ actor: admin })).toEqual({ off: [] });
 	});
 

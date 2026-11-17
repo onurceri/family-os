@@ -13,6 +13,7 @@ import { revokeTokensOf } from '../api-tokens.ts';
 import { CORE_CAPABILITIES } from '../core-capabilities.ts';
 import { sessionEnded } from '../core-events.ts';
 import { DecisionSchema } from '../decide.ts';
+import { SleepWindowSchema, sleepOf } from '../device-sleep.ts';
 import { slideshowOn } from '../device-slideshow.ts';
 import { DeviceSchema, toDevice } from '../devices.ts';
 import { NextUpModeSchema, readNextUp } from '../next-up.ts';
@@ -54,7 +55,7 @@ export function createSignIn(deps: CoreExtensionDeps) {
 			 * The trusted family device this session is on, and whether it shows the family's photos
 			 * after a while without a touch; null on any other browser (a display, a personal phone).
 			 */
-			device: z.object({ slideshow: z.boolean() }).nullable(),
+			device: z.object({ slideshow: z.boolean(), sleep: SleepWindowSchema.nullable() }).nullable(),
 		}),
 		async handle(ctx, { actor, device }) {
 			const row = await findMember(ctx.db, requireMember(actor).memberId);
@@ -67,7 +68,37 @@ export function createSignIn(deps: CoreExtensionDeps) {
 				fullSignIn: isFullSignIn(actor),
 				disabledExtensions: [...deps.features().disabled()],
 				nextUp: await readNextUp(ctx.db, row.id),
-				device: device ? { slideshow: await slideshowOn(ctx.db, device.id) } : null,
+				device: device
+					? {
+							slideshow: await slideshowOn(ctx.db, device.id),
+							sleep: await sleepOf(ctx.db, device.id),
+						}
+					: null,
+			};
+		},
+	});
+
+	/** The dark hours of a family device, for its sign-in page where nobody is signed in yet. */
+	const deviceSleep = defineRoute({
+		method: 'get',
+		path: '/device/sleep',
+		operationId: 'core.getDeviceSleep',
+		summary: 'The hours this family device goes dark, for its sign-in page',
+		requires: 'trusted-device',
+		response: z.object({
+			sleep: SleepWindowSchema.nullable(),
+			/** What the hours are read in and written with: nobody is signed in to say. */
+			timeZone: z.string(),
+			formatLocale: z.string(),
+			hourCycle: z.enum(['h12', 'h23']),
+		}),
+		async handle(ctx, { device }) {
+			const family = await ctx.family.settings();
+			return {
+				sleep: device ? await sleepOf(ctx.db, device.id) : null,
+				timeZone: family.timeZone,
+				formatLocale: family.formatLocale,
+				hourCycle: family.hourCycle,
 			};
 		},
 	});
@@ -220,6 +251,7 @@ export function createSignIn(deps: CoreExtensionDeps) {
 
 	return {
 		me,
+		deviceSleep,
 		myAccess,
 		listDevices,
 		currentDevice,

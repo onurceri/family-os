@@ -28,6 +28,15 @@
 	import { session } from '#lib/session.svelte.js';
 	import { familyModeCapabilities } from '#lib/today/today-data.svelte.js';
 	import AddDevice, { type AddStart } from './AddDevice.svelte';
+	import SleepField from './SleepField.svelte';
+	import {
+		DEFAULT_FROM,
+		DEFAULT_UNTIL,
+		sleepChanged,
+		sleepChoiceOf,
+		sleepProblem,
+		sleepToSave,
+	} from './sleep-field.js';
 	import DisplayForm from './DisplayForm.svelte';
 	import { displayOptions, leftOutNames } from './display-options.js';
 	import DisplayPages from './DisplayPages.svelte';
@@ -64,6 +73,8 @@
 	/** The family devices that show no photos when nobody is using them (on for all others). */
 	let slideshowOff = $state<string[]>([]);
 	let slideshowError = $state<string | null>(null);
+	/** The hours each device goes dark (device id → hours); a device not in it never does. */
+	let sleeps = $state<Record<string, { from: string; until: string }>>({});
 	let loaded = $state(false);
 	let error = $state<string | null>(null);
 
@@ -105,6 +116,10 @@
 	let editTodaySeconds = $state<number>(DEFAULT_DURATIONS.todaySeconds);
 	let editPageSeconds = $state<number>(DEFAULT_DURATIONS.pageSeconds);
 	let editBackSeconds = $state<number>(DEFAULT_DURATIONS.backSeconds);
+	let editSleepOn = $state(false);
+	let editSleepFrom = $state(DEFAULT_FROM);
+	let editSleepUntil = $state(DEFAULT_UNTIL);
+	let sleepError = $state<string | null>(null);
 	let editError = $state<string | null>(null);
 	let editForm = $state<HTMLFormElement>();
 
@@ -132,7 +147,11 @@
 			(editName !== opened.name ||
 				editNames !== (opened.display?.showNames ?? false) ||
 				[...editCaps].sort().join() !== [...(opened.display?.capabilities ?? [])].sort().join() ||
-				pagesChanged(editChoice, savedPages(opened))),
+				pagesChanged(editChoice, savedPages(opened)) ||
+				sleepChanged(
+					{ on: editSleepOn, from: editSleepFrom, until: editSleepUntil },
+					sleeps[opened.id],
+				)),
 	);
 
 	const when = (ms: number) =>
@@ -156,15 +175,19 @@
 	};
 
 	async function load() {
-		const [list, mine, pages, slideshow] = await Promise.all([
+		const [list, mine, pages, slideshow, sleep] = await Promise.all([
 			api.GET('/api/v1/core/devices'),
 			api.GET('/api/v1/core/devices/current'),
 			api.GET('/api/v1/core/displays/pages'),
 			api.GET('/api/v1/core/devices/slideshow'),
+			api.GET('/api/v1/core/devices/sleep'),
 		]);
 		devices = list.data ?? [];
 		rotations = pages.data?.displays ?? {};
 		slideshowOff = slideshow.data?.off ?? [];
+		sleeps = Object.fromEntries(
+			(sleep.data?.devices ?? []).map((d) => [d.deviceId, { from: d.from, until: d.until }]),
+		);
 		current = mine.data?.device ?? null;
 		if (!optionsLoaded) {
 			const caps = await api.GET('/api/v1/core/displays/capabilities');
@@ -188,6 +211,11 @@
 	function openDevice(device: Device) {
 		openId = device.id;
 		slideshowError = null;
+		sleepError = null;
+		const sleep = sleepChoiceOf(sleeps[device.id]);
+		editSleepOn = sleep.on;
+		editSleepFrom = sleep.from;
+		editSleepUntil = sleep.until;
 		editName = device.name;
 		editCaps = [...(device.display?.capabilities ?? [])];
 		editNames = device.display?.showNames ?? false;
@@ -210,6 +238,19 @@
 			{ onError: (failure) => (editError = failure.message) },
 		);
 		if (!screen.ok) return;
+		const hours = await runAction(
+			api.POST('/api/v1/actions/core.setDeviceSleep', {
+				body: {
+					deviceId,
+					sleep: sleepToSave({ on: editSleepOn, from: editSleepFrom, until: editSleepUntil }),
+				},
+			}),
+			{ onError: (failure) => (editError = failure.message) },
+		);
+		if (!hours.ok) {
+			await load();
+			return;
+		}
 		// The screen is saved; the pages are the second half of the same Save.
 		const rotation = rotationToSave(editChoice);
 		const pages = await runAction(
@@ -232,6 +273,21 @@
 		);
 		await load();
 		// Changed on this very device: it follows at once.
+		if (result.ok && deviceId === current?.id) await session.refresh();
+	}
+
+	/** A family device's hours apply at once, as its photo switch does. */
+	async function saveSleep(deviceId: string) {
+		const choice = { on: editSleepOn, from: editSleepFrom, until: editSleepUntil };
+		if (sleepProblem(choice) || (choice.on && sleepToSave(choice) === null)) return;
+		sleepError = null;
+		const result = await runAction(
+			api.POST('/api/v1/actions/core.setDeviceSleep', {
+				body: { deviceId, sleep: sleepToSave(choice) },
+			}),
+			{ onError: (failure) => (sleepError = failure.message) },
+		);
+		await load();
 		if (result.ok && deviceId === current?.id) await session.refresh();
 	}
 
@@ -291,17 +347,18 @@
 		<Section label={t('devices_this')}>
 			<Card rows data-testid="this-device">
 				<Row
-					wrap
-					title={current
-						? t('devices_this_trusted', { name: current.name })
-						: t('devices_this_untrusted')}
-					meta={t('devices_trust_hint')}
+					wrap={!current}
+					title={current ? current.name : t('devices_this_untrusted')}
+					meta={current ? t('devices_trusted_badge') : t('devices_trust_hint')}
 				>
 					{#snippet lead()}<Tablet class="size-5" aria-hidden="true" />{/snippet}
 					{#snippet trail()}
 						{#if current}
-							<Button size="sm" variant="ghost" onclick={forget}>{t('devices_forget_short')}</Button
-							>
+							<ConfirmButton
+								label={t('devices_forget_short')}
+								confirmLabel={t('devices_forget_confirm')}
+								onconfirm={forget}
+							/>
 						{:else}
 							<Button size="sm" variant="secondary" onclick={() => openAdd({ kind: 'shared' })}
 								>{t('devices_trust')}</Button
@@ -385,6 +442,9 @@
 				bind:name={editName}
 				bind:capabilities={editCaps}
 				bind:showNames={editNames}
+				bind:sleepOn={editSleepOn}
+				bind:sleepFrom={editSleepFrom}
+				bind:sleepUntil={editSleepUntil}
 				error={editError}
 				onsubmit={saveDisplay}
 			/>
@@ -399,14 +459,21 @@
 				/>
 			</div>
 		{:else if opened}
-			<div class="grid gap-3 text-sm">
-				<p>{t('devices_family_about')}</p>
-				<p class="text-ink-soft">
-					{t('devices_added', { when: when(opened.createdAt) })}<br />
-					{t('devices_last_used', { when: when(opened.lastSeenAt) })}
-				</p>
-			</div>
-			<div class="mt-5">
+			<div class="grid gap-4">
+				<SleepField
+					idPrefix="family"
+					bind:on={editSleepOn}
+					bind:from={editSleepFrom}
+					bind:until={editSleepUntil}
+					onchange={(on) => {
+						editSleepOn = on;
+						void saveSleep(opened.id);
+					}}
+					ontimes={() => void saveSleep(opened.id)}
+				/>
+				{#if sleepError}
+					<p class="text-attention text-sm font-semibold" role="alert">{sleepError}</p>
+				{/if}
 				<Card rows>
 					{#key `${opened.id}:${slideshowOff.includes(opened.id)}`}
 						<SwitchRow
@@ -423,6 +490,13 @@
 				{/if}
 				<!-- Why it would show nothing (an extension's note, when it has one). -->
 				<Slot name="device.slideshowNote" />
+			</div>
+			<div class="mt-5 grid gap-3 text-sm">
+				<p>{t('devices_family_about')}</p>
+				<p class="text-ink-soft">
+					{t('devices_added', { when: when(opened.createdAt) })}<br />
+					{t('devices_last_used', { when: when(opened.lastSeenAt) })}
+				</p>
 			</div>
 		{/if}
 	</SidePanel>

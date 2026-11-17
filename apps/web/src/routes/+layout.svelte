@@ -59,6 +59,9 @@
 	} from '#lib/extensions.js';
 	import { family } from '#lib/family.svelte.js';
 	import { familyDateLocale } from '#lib/format.svelte.js';
+	import { api } from '#lib/api.js';
+	import SleepCover from '#lib/SleepCover.svelte';
+	import { dateLocale as formatDateLocale, type HourCycle } from '@famos/time';
 	import { bootGuard, bootState } from '#lib/boot-failure.svelte.js';
 	import BootFailed from '#lib/BootFailed.svelte';
 	import LoadingMark from '#lib/LoadingMark.svelte';
@@ -114,6 +117,63 @@
 	const path = $derived(page.url.pathname);
 	// The family display is its own world: no sign-in, no navigation, its own data.
 	const isDisplay = $derived(path === '/display' || path.startsWith('/display/'));
+	// The dark hours of this browser when it is a family device: from the session once someone is
+	// signed in, else asked of the server (a device has no one signed in on its names list).
+	type SleepHours = { from: string; until: string } | null;
+	let signedOutSleep = $state<{
+		sleep: SleepHours;
+		timeZone: string;
+		formatLocale: string;
+		hourCycle: HourCycle;
+	} | null>(null);
+	$effect(() => {
+		if (isDisplay || session.status !== 'anonymous') {
+			signedOutSleep = null;
+			return;
+		}
+		let live = true;
+		const read = async () => {
+			try {
+				const res = await api.GET('/api/v1/core/device/sleep');
+				if (live) signedOutSleep = res.data ?? null;
+			} catch {
+				// Keep what we know; the next read tries again.
+			}
+		};
+		void read();
+		// Nobody is signed in, so no live update reaches this page: it asks now and then.
+		const again = setInterval(() => void read(), 5 * 60_000);
+		return () => {
+			live = false;
+			clearInterval(again);
+		};
+	});
+	/** What the sleep cover needs; null on a browser that is not a family device. */
+	const sleepView = $derived.by(() => {
+		if (isDisplay) return null;
+		const device = session.status === 'ready' ? session.me?.device : null;
+		if (device)
+			return {
+				hours: device.sleep,
+				timeZone: family.timeZone,
+				locale: familyDateLocale(),
+				hourCycle: family.hourCycle,
+			};
+		if (session.status === 'anonymous' && signedOutSleep)
+			return {
+				hours: signedOutSleep.sleep,
+				timeZone: signedOutSleep.timeZone,
+				locale: formatDateLocale(
+					getLocale(),
+					signedOutSleep.formatLocale,
+					signedOutSleep.hourCycle,
+				),
+				hourCycle: signedOutSleep.hourCycle,
+			};
+		return null;
+	});
+	/** Whether the screen is black now: the cover that photos would show under mounts none. */
+	let asleep = $state(false);
 	// Settings mode: the settings list replaces the app sidebar.
 	const settingsMode = $derived(!isDisplay && (path === '/more' || isSettingsPath(path)));
 	const isActive = (item: NavItem) =>
@@ -666,7 +726,7 @@
 		<PreviewBar />
 		<!-- On a family device, what covers the app when nobody has touched it for a while. The app
 		     stays mounted underneath, so a touch brings it back exactly as it was. -->
-		{#if offersDeviceCover(session.me)}<Slot name="device.ambient" />{/if}
+		{#if offersDeviceCover(session.me) && !asleep}<Slot name="device.ambient" />{/if}
 		<!-- A page's code on its way (slow network): the same late, quiet mark as a slow load. -->
 		{#if navigating.to}<LoadingMark />{/if}
 	</div>
@@ -684,6 +744,16 @@
 			{@render routed()}
 		{/if}
 	</main>
+{/if}
+
+{#if sleepView}
+	<SleepCover
+		hours={sleepView.hours}
+		timeZone={sleepView.timeZone}
+		locale={sleepView.locale}
+		hourCycle={sleepView.hourCycle}
+		bind:dark={asleep}
+	/>
 {/if}
 
 <Dialog

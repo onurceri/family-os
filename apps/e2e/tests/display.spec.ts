@@ -129,7 +129,9 @@ test('a tablet the family shares becomes a family device from Add a device', asy
 	await sheet.getByRole('button', { name: 'Make this a family device' }).click();
 	await expect(sheet.getByText('Kitchen tablet is a family device.')).toBeVisible();
 	await sheet.getByRole('button', { name: 'Close' }).click();
-	await expect(page.getByText('This device is the family device “Kitchen tablet”.')).toBeVisible();
+	const thisDevice = page.getByTestId('this-device');
+	await expect(thisDevice.getByText('Kitchen tablet', { exact: true })).toBeVisible();
+	await expect(thisDevice.getByRole('button', { name: 'Stop using' })).toBeVisible();
 	await expect(
 		page.getByTestId('device-list').getByRole('button', { name: 'Kitchen tablet' }),
 	).toContainText('Family device');

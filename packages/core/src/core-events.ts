@@ -119,6 +119,19 @@ export const deviceChanged = defineEvent(
 export const deviceSlideshowChanged = defineEvent('core.device.slideshow.changed', z.object({}), {
 	audience: [CORE_CAPABILITIES.devicesManage.id, ANY_MEMBER],
 });
+/**
+ * A device's dark hours changed. Like the photo switch it names no device, so whoever is signed
+ * in hears of it (a family device has no address of its own) and makes the shell read again.
+ */
+export const deviceSleepChanged = defineEvent('core.device.sleep.changed', z.object({}), {
+	audience: [CORE_CAPABILITIES.devicesManage.id, ANY_MEMBER],
+});
+/** The same change for the screen it is about: it checks again without a reload. */
+export const displaySleepChanged = defineEvent(
+	'core.device.sleep.display',
+	z.object({ deviceId: z.string() }),
+	{ audience: (payload) => [{ device: payload.deviceId }] },
+);
 /** A display told what its screen had no room for (Settings → Devices shows it). */
 export const displayFitChanged = defineEvent(
 	'core.displayFit.changed',
@@ -147,6 +160,8 @@ export const coreEvents = [
 	roleChanged,
 	deviceChanged,
 	deviceSlideshowChanged,
+	deviceSleepChanged,
+	displaySleepChanged,
 	displayFitChanged,
 	featuresChanged,
 	aiAreasChanged,
