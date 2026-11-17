@@ -106,6 +106,14 @@ export async function refreshSubscription(id: string): Promise<void> {
 	unwrap(await api.POST('/api/v1/actions/calendar.refreshSubscription', { body: { id } }));
 }
 
+/** Asks every subscription to refresh now; how many were asked. */
+export async function refreshAllSubscriptions(): Promise<number> {
+	const out = unwrap(
+		await api.POST('/api/v1/actions/calendar.refreshAllSubscriptions', { body: {} }),
+	);
+	return out.status === 'applied' ? out.output.count : 0;
+}
+
 /* ───────────── Tags ───────────── */
 
 export async function loadTags(): Promise<Tag[]> {
