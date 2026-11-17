@@ -32,6 +32,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       base: ${{ steps.base.outputs.sha }}
+      run: ${{ steps.need.outputs.run }}
     # Same image as the e2e job of ci.yml: the browser and its system libraries are in it.
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
@@ -40,20 +41,42 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: main
+          fetch-depth: 0
           persist-credentials: false
       - id: base
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - uses: ./.github/actions/setup
+      # A release changes the pictures only when something they show changed since the release
+      # before it; by hand the job always runs.
+      - id: need
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          run=true
+          if [ "$EVENT" = push ]; then
+            previous=$(git tag --list 'v*.*.*' --sort=-v:refname | grep -vx "$TAG" | head -n 1 || true)
+            if [ -n "$previous" ] && [ "$(node scripts/readme-pictures-compare.mjs needed --base "$previous" --head "$TAG")" = false ]; then
+              run=false
+              echo "Nothing the README pictures show changed between $previous and $TAG; no pictures were made." | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+      - if: steps.need.outputs.run == 'true'
+        uses: ./.github/actions/setup
       - name: Install cwebp
+        if: steps.need.outputs.run == 'true'
         run: |
           apt-get update -qq
           apt-get install -y -qq webp
-      - run: pnpm build
-      - run: pnpm --filter @famos/e2e sweep:readme
+      - if: steps.need.outputs.run == 'true'
+        run: pnpm build
+      - if: steps.need.outputs.run == 'true'
+        run: pnpm --filter @famos/e2e sweep:readme
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - if: steps.need.outputs.run == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: readme-pictures
           path: |
@@ -61,7 +84,7 @@ jobs:
             README.md
           retention-days: 7
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        if: always()
+        if: always() && steps.need.outputs.run == 'true'
         with:
           name: readme-pictures-png
           path: apps/e2e/test-results/readme
@@ -70,6 +93,7 @@ jobs:
 
   propose:
     needs: pictures
+    if: needs.pictures.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -85,11 +109,17 @@ jobs:
         with:
           name: readme-pictures
           path: .
+      - name: Install dwebp
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq webp
       - name: Propose the new pictures
         env:
           GH_TOKEN: ${{ github.token }}
           BASE: ${{ needs.pictures.outputs.base }}
         run: |
+          # A picture that differs from the committed one only by noise stays as committed.
+          node scripts/readme-pictures-compare.mjs settle | tee -a "$GITHUB_STEP_SUMMARY"
           if [ -z "$(git status --porcelain -- docs/images README.md)" ]; then
             echo "The pictures of the README are up to date; nothing to propose." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0

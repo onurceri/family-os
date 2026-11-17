@@ -7,6 +7,7 @@ import { type FakeModel, startFakeModel } from './fake-model.ts';
 import { type FamilyOS, startFamilyOS } from './server.ts';
 import { api, FAMILY_TIME_ZONE, setUpThroughTheUi } from './sign-in.ts';
 import { copyTemplate, templateFromEnv } from './template.ts';
+import { now } from './today.ts';
 
 export { ADMIN, api, FAMILY_TIME_ZONE, signInWithPassword } from './sign-in.ts';
 
@@ -161,7 +162,7 @@ export function nextWeek(): string {
 		year: 'numeric',
 		month: '2-digit',
 		day: '2-digit',
-	}).format(new Date(Date.now() + 7 * 86_400_000));
+	}).format(new Date(now() + 7 * 86_400_000));
 }
 
 /** The draft card proposing `title` (draft cards sit inside their capture's group). */
