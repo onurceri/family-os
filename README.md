@@ -6,7 +6,7 @@ choice suggests; a person in the family approves.
 
 ![FamilyOS on a phone and on a display on the kitchen wall: Today shows the time, the weather, the next thing, each person's day, chores, shopping and the board](docs/images/hero-kitchen.webp)
 
-https://github.com/user-attachments/assets/25be65a8-3f14-42ee-a2e2-a92d369a6ce8
+https://github.com/user-attachments/assets/c530a767-677e-4c81-8ee2-4bf47a80ccce
 
 > [!WARNING]
 > **Beta.** Until 1.0 there is **no backward-compatibility guarantee**: the data format, the API,
