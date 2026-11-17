@@ -458,14 +458,7 @@
 				/>
 			</div>
 		{:else if opened}
-			<div class="grid gap-3 text-sm">
-				<p>{t('devices_family_about')}</p>
-				<p class="text-ink-soft">
-					{t('devices_added', { when: when(opened.createdAt) })}<br />
-					{t('devices_last_used', { when: when(opened.lastSeenAt) })}
-				</p>
-			</div>
-			<div class="mt-5 grid gap-4">
+			<div class="grid gap-4">
 				<SleepField
 					idPrefix="family"
 					bind:on={editSleepOn}
@@ -496,6 +489,13 @@
 				{/if}
 				<!-- Why it would show nothing (an extension's note, when it has one). -->
 				<Slot name="device.slideshowNote" />
+			</div>
+			<div class="mt-5 grid gap-3 text-sm">
+				<p>{t('devices_family_about')}</p>
+				<p class="text-ink-soft">
+					{t('devices_added', { when: when(opened.createdAt) })}<br />
+					{t('devices_last_used', { when: when(opened.lastSeenAt) })}
+				</p>
 			</div>
 		{/if}
 	</SidePanel>
