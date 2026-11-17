@@ -1,0 +1,81 @@
+name: Changed paths
+description: Which checks the paths of this change can affect (scripts/ci-changes.mjs). Needs a checkout with full history.
+
+inputs:
+  skip-release:
+    description: "Run nothing for a release commit on main (the Release workflow checks it itself)"
+    default: "false"
+  docker-on-main:
+    description: "Always build the image on main, to keep its layer cache warm"
+    default: "false"
+
+outputs:
+  lint:
+    value: ${{ steps.decide.outputs.lint }}
+  typecheck:
+    value: ${{ steps.decide.outputs.typecheck }}
+  test:
+    value: ${{ steps.decide.outputs.test }}
+  e2e:
+    value: ${{ steps.decide.outputs.e2e }}
+  docker:
+    value: ${{ steps.decide.outputs.docker }}
+  audit:
+    value: ${{ steps.decide.outputs.audit }}
+  codeql:
+    value: ${{ steps.decide.outputs.codeql }}
+
+runs:
+  using: composite
+  steps:
+    - id: decide
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        REF: ${{ github.ref }}
+        SHA: ${{ github.sha }}
+        BEFORE: ${{ github.event.before }}
+        PR_BASE: ${{ github.event.pull_request.base.sha }}
+        PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        SKIP_RELEASE: ${{ inputs.skip-release }}
+        DOCKER_ON_MAIN: ${{ inputs.docker-on-main }}
+      run: |
+        # A failed diff leaves the list empty, which the classifier answers with "run everything".
+        files="$RUNNER_TEMP/changed-files.txt"
+        : > "$files"
+        args=()
+        diffed=false
+        mode="everything (manual run, schedule, tag or release workflow)"
+        if [ "$EVENT" = pull_request ]; then
+          mode="pull request"
+          diffed=true
+          git diff --name-only "$PR_BASE...$PR_HEAD" > "$files" || : > "$files"
+        elif [ "$EVENT" = push ] && [ "$REF" = refs/heads/main ]; then
+          mode="push to main"
+          diffed=true
+          git diff --name-only "$BEFORE" "$SHA" > "$files" || : > "$files"
+          if [ "$DOCKER_ON_MAIN" = true ]; then args+=(--docker-on-main); fi
+          if [ "$SKIP_RELEASE" = true ]; then
+            case "$(git log -1 --format=%s "$SHA")" in
+              "chore(release):"*)
+                args+=(--release)
+                mode="release commit (the Release workflow checks it)"
+                ;;
+            esac
+          fi
+        fi
+        decision="$RUNNER_TEMP/decision.txt"
+        if [ "$diffed" = true ]; then
+          node scripts/ci-changes.mjs "${args[@]}" < "$files" > "$decision"
+        else
+          node scripts/ci-changes.mjs < /dev/null > "$decision"
+        fi
+        cat "$decision" >> "$GITHUB_OUTPUT"
+        {
+          echo "### What runs: $mode"
+          echo "$(grep -c . "$files" || true) changed path(s); an empty list runs everything."
+          echo
+          echo "| check | runs |"
+          echo "|---|---|"
+          sed 's/^\(.*\)=\(.*\)$/| \1 | \2 |/' "$decision"
+        } >> "$GITHUB_STEP_SUMMARY"

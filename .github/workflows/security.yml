@@ -23,8 +23,27 @@ env:
   DO_NOT_TRACK: "1"
 
 jobs:
+  # Pull requests and pushes run only the scans their paths can change (scripts/ci-changes.mjs);
+  # the weekly and manual runs scan everything.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      audit: ${{ steps.changes.outputs.audit }}
+      codeql: ${{ steps.changes.outputs.codeql }}
+      docker: ${{ steps.changes.outputs.docker }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changes
+        uses: ./.github/actions/changes
+
   # Production dependencies only: what ships in the image, not the test and build tools.
   audit:
+    needs: changes
+    if: needs.changes.outputs.audit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,6 +54,8 @@ jobs:
       - run: pnpm audit --prod --audit-level high
 
   codeql:
+    needs: changes
+    if: needs.changes.outputs.codeql == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -55,6 +76,8 @@ jobs:
   # The image as a family would run it (amd64; the arm64 build is proven by CI). Only fixed
   # vulnerabilities of high or critical severity count.
   image:
+    needs: changes
+    if: needs.changes.outputs.docker == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

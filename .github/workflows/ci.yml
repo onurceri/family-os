@@ -26,9 +26,35 @@ env:
   # a week are dropped so it does not grow without end.
   TURBO_CACHE_MAX_AGE: 7d
 
-# Every job starts at once; none waits for another. `ci-ok` is the one check to require.
+# Every job starts at once once `changes` has decided, from the paths a change touches, which ones it
+# can affect (scripts/ci-changes.mjs); a skipped job counts as passed. `ci-ok` is the one check to require.
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      lint: ${{ steps.changes.outputs.lint }}
+      typecheck: ${{ steps.changes.outputs.typecheck }}
+      test: ${{ steps.changes.outputs.test }}
+      e2e: ${{ steps.changes.outputs.e2e }}
+      docker: ${{ steps.changes.outputs.docker }}
+    steps:
+      # Full history, so the diff between the base and the head of a pull request can be made.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # The release commit on main is checked by the Release workflow itself (it calls this one on
+      # the tag), so its push to main runs nothing. Main always builds the image to keep its cache warm.
+      - id: changes
+        uses: ./.github/actions/changes
+        with:
+          skip-release: "true"
+          docker-on-main: "true"
+
   lint:
+    needs: changes
+    if: needs.changes.outputs.lint == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -50,6 +76,8 @@ jobs:
   # Turborepo's cache skips the packages a change does not reach. A new extension falls in the
   # first part, so none goes unchecked.
   typecheck:
+    needs: changes
+    if: needs.changes.outputs.typecheck == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -85,6 +113,8 @@ jobs:
 
   # Vitest is not run through Turborepo (one root run over all projects), so it is split by files.
   test:
+    needs: changes
+    if: needs.changes.outputs.test == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -103,6 +133,8 @@ jobs:
   # Each shard builds the production bundle itself (a cache hit when nothing changed), which also
   # proves `pnpm build` works.
   e2e:
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # The browser and its system libraries come with the image, so no apt step waits on a slow
@@ -139,7 +171,8 @@ jobs:
   # A pull request proves the image still builds, and main keeps the layer cache warm for the next
   # one; a release builds and publishes the image itself.
   docker:
-    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    needs: changes
+    if: needs.changes.outputs.docker == 'true' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     # The arm64 half builds under emulation; a hung build would otherwise hold the PR for hours.
     timeout-minutes: 30
@@ -160,10 +193,11 @@ jobs:
           cache-to: type=gha,mode=max
 
   # The single check for branch protection: green only when every job above passed (docker may be
-  # skipped outside pull requests and main).
+  # skipped: outside pull requests and main, or because the change cannot affect it). It also fails
+  # when `changes` did, so a broken decision never passes as "nothing to check".
   ci-ok:
     if: always()
-    needs: [lint, typecheck, test, e2e, docker]
+    needs: [changes, lint, typecheck, test, e2e, docker]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
