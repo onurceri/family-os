@@ -79,7 +79,27 @@ const main = (page: Page, name: string, y = 0, width = 836, x = 84) =>
 		}),
 	);
 
+/**
+ * A board note leans by an angle taken from its id, which is random in every run, so the same
+ * picture would come out a little different each time. Here every note leans the same way.
+ */
+const steadied = new WeakSet<Page>();
+async function steadyNotes(page: Page) {
+	if (steadied.has(page)) return;
+	steadied.add(page);
+	await page.addInitScript(() => {
+		const add = () => {
+			const style = document.createElement('style');
+			style.textContent = '[style*="--tilt"] { --tilt: -1deg !important; }';
+			document.head.append(style);
+		};
+		if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', add);
+		else add();
+	});
+}
+
 async function open(page: Page, path: string, time = '15:20') {
+	await steadyNotes(page);
 	await standAt(page, time);
 	await page.goto(path);
 	await page.waitForLoadState('networkidle');
@@ -331,6 +351,7 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 			const { display } = wall;
 			// A display follows the clock by default (daylight at 15:20), so the night is chosen.
 			await display.addInitScript(() => localStorage.setItem('famos.mode', 'night'));
+			await steadyNotes(display);
 			await standAt(display, '15:20');
 			await display.goto('/display');
 			// The display claims its pairing on its next poll (every five seconds).
@@ -467,6 +488,7 @@ test('the pictures of the README', async ({ page, browser, family, model }) => {
 				style: 'broadsheet',
 			});
 			await wall.display.emulateMedia({ colorScheme: 'light' });
+			await steadyNotes(wall.display);
 			await standAt(wall.display, '15:20');
 			await wall.display.goto('/display');
 			await expect(wall.display.getByTestId('today-body')).toHaveAttribute('data-settled', 'true', {
