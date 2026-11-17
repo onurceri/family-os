@@ -86,9 +86,11 @@ export function settlePictures() {
 	const dir = mkdtempSync(join(tmpdir(), 'readme-pictures-'));
 	const kept = [];
 	const restored = [];
+	// Decoded into the temporary folder, never next to the pictures (they would be committed).
 	const decode = (file) => {
-		execFileSync('dwebp', ['-quiet', '-ppm', file, '-o', `${file}.ppm`]);
-		return readPpm(readFileSync(`${file}.ppm`));
+		const out = join(dir, 'decoded.ppm');
+		execFileSync('dwebp', ['-quiet', '-ppm', file, '-o', out]);
+		return readPpm(readFileSync(out));
 	};
 	try {
 		for (const path of modified) {

@@ -6,6 +6,9 @@ import { defineConfig, devices } from '@playwright/test';
  * so the pictures change only when the UI does. `FAMOS_E2E_FIXED_NOW` replaces it, for a check on another day.
  */
 process.env.FAMOS_E2E_FIXED_NOW ??= '2026-11-16T15:20:00+03:00';
+// The real moment that instant stands for. Every process (this one, the workers, each server the run
+// starts) counts from it, so the clock never goes back between them: records made earlier stay earlier.
+process.env.FAMOS_E2E_CLOCK_START ??= String(Date.now());
 
 /**
  * The pictures of the README (`pnpm sweep:readme`): the same servers and prepared family as the

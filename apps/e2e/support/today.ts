@@ -3,16 +3,17 @@ import { FAMILY_TIME_ZONE } from './sign-in.ts';
 
 /** The family's day, and a clock to stand at a time of day. */
 
-const STARTED = Date.now();
-
 /**
  * The time the run reads as now, in epoch milliseconds. Normally the real time; when
- * `FAMOS_E2E_FIXED_NOW` (an ISO instant) is set, that instant, moving on from the start of the
- * run. The README pictures set it so they show one day whatever day they are made on.
+ * `FAMOS_E2E_FIXED_NOW` (an ISO instant) is set, that instant, moving on from
+ * `FAMOS_E2E_CLOCK_START` (the real start of the run, the same for every process). The README
+ * pictures set both so they show one day whatever day they are made on.
  */
 export const now = (): number => {
 	const fixed = process.env.FAMOS_E2E_FIXED_NOW;
-	return fixed ? Date.parse(fixed) + (Date.now() - STARTED) : Date.now();
+	if (!fixed) return Date.now();
+	const start = Number(process.env.FAMOS_E2E_CLOCK_START ?? Date.now());
+	return Date.parse(fixed) + (Date.now() - start);
 };
 
 /** The family's date `offset` days from today, as YYYY-MM-DD. */
