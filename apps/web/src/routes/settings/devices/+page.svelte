@@ -347,17 +347,18 @@
 		<Section label={t('devices_this')}>
 			<Card rows data-testid="this-device">
 				<Row
-					wrap
-					title={current
-						? t('devices_this_trusted', { name: current.name })
-						: t('devices_this_untrusted')}
-					meta={t('devices_trust_hint')}
+					wrap={!current}
+					title={current ? current.name : t('devices_this_untrusted')}
+					meta={current ? t('devices_trusted_badge') : t('devices_trust_hint')}
 				>
 					{#snippet lead()}<Tablet class="size-5" aria-hidden="true" />{/snippet}
 					{#snippet trail()}
 						{#if current}
-							<Button size="sm" variant="ghost" onclick={forget}>{t('devices_forget_short')}</Button
-							>
+							<ConfirmButton
+								label={t('devices_forget_short')}
+								confirmLabel={t('devices_forget_confirm')}
+								onconfirm={forget}
+							/>
 						{:else}
 							<Button size="sm" variant="secondary" onclick={() => openAdd({ kind: 'shared' })}
 								>{t('devices_trust')}</Button
