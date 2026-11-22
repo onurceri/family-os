@@ -17,7 +17,7 @@ Shared Ev Işığı components. Style only through tokens (docs/design/design-sy
 - **Composer**: 48 px lit tile with `+`, input, `Add details` link once there is text, `Enter` adds and keeps focus, `Esc` clears; `size="lg"` is a 56 px round field for a page whose main act is adding (Shopping, Tasks).
 - **Menu**: `role="menu"` popover (`shadow-pop`, 40 px items, separator before danger); arrow keys, Escape and focus return.
 - **ActionSheet**: phone menu from the bottom: title, 48 px actions, Cancel row; modal, focus trapped and returned.
-- **Sheet**: phone form container, full height from 12 px, grab handle, Cancel · Title · Save bar; `half` for pickers; modal, focus returned.
+- **Sheet**: phone form container, full height from 12 px, grab handle, Cancel · Title · Save bar; `half` for pickers; modal, focus returned; pulling it down closes it and the page under it does not scroll.
 - **Dialog**: native `<dialog>` modal, 400 px (90 % on phones), 18/800 title, actions right; focus trapped and returned.
 - **Fab**: 56 px `ink` round add button above the tab bar (`--fab-bottom`) and the safe area.
 - **RecordHeader**: 56 px disc, 26/800 name, one meta line of facts and avatars, actions at the right (under the name below 28 rem).
