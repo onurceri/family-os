@@ -121,6 +121,15 @@ describe('pullToClose', () => {
 		expect([...up, ...sideways].some((m) => m.defaultPrevented)).toBe(false);
 	});
 
+	it('leaves a slider to the finger', () => {
+		const { el, body } = sheet();
+		body.insertAdjacentHTML('beforeend', '<input id="level" type="range" />');
+		const close = vi.fn();
+		pullToClose(el, close);
+		drag(document.getElementById('level') as HTMLElement, 100, 400);
+		expect(close).not.toHaveBeenCalled();
+	});
+
 	it('stops listening', () => {
 		const { el, bar } = sheet();
 		const close = vi.fn();

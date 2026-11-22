@@ -421,7 +421,7 @@
 		open={opened !== undefined}
 		title={opened?.name ?? ''}
 		closeLabel={t('side_panel_close')}
-		cancelLabel={t('cancel')}
+		cancelLabel={opened?.kind === 'kiosk' ? t('cancel') : undefined}
 		saveLabel={t('save')}
 		onsave={opened?.kind === 'kiosk' ? () => editForm?.requestSubmit() : undefined}
 		danger={opened?.kind === 'kiosk' ? removeButton : undefined}

@@ -19,7 +19,7 @@ export function closesOnRelease(distance: number, speed: number, height: number)
  * Pull to close. A touch that starts on the bar, or in content scrolled to its top, and moves down
  * moves the sheet with the finger; letting go far or fast enough calls `close` (the page may still
  * keep the sheet, for example to ask about unsaved changes), otherwise the sheet goes back. A touch
- * in content that is scrolled down, a sideways move, or one going up stays a normal scroll.
+ * in content that is scrolled down or on a slider, a sideways move, or one going up stays as it was.
  * While pulling the sheet carries `data-pulling`. Returns the function that stops listening.
  */
 export function pullToClose(sheet: HTMLElement, close: () => void): () => void {
@@ -43,6 +43,9 @@ export function pullToClose(sheet: HTMLElement, close: () => void): () => void {
 			if (el.scrollTop > 0) return true;
 		return false;
 	};
+	// A slider takes the finger itself, even when it slips down a little.
+	const ownsTouch = (target: EventTarget | null) =>
+		target instanceof Element && target.closest('input[type="range"]') !== null;
 
 	const settle = () => {
 		pulling = false;
@@ -54,7 +57,8 @@ export function pullToClose(sheet: HTMLElement, close: () => void): () => void {
 
 	const onstart = (e: TouchEvent) => {
 		const t = e.touches[0];
-		tracking = e.touches.length === 1 && t !== undefined && !scrolledDown(e.target);
+		tracking =
+			e.touches.length === 1 && t !== undefined && !scrolledDown(e.target) && !ownsTouch(e.target);
 		pulling = false;
 		if (!tracking || !t) return;
 		startX = t.clientX;
@@ -67,7 +71,12 @@ export function pullToClose(sheet: HTMLElement, close: () => void): () => void {
 		const dy = t.clientY - startY;
 		if (!pulling) {
 			const dx = t.clientX - startX;
-			if (Math.abs(dy) < PULL_START && Math.abs(dx) < PULL_START) return;
+			if (Math.abs(dy) < PULL_START && Math.abs(dx) < PULL_START) {
+				// Downward from the top nothing can scroll; claimed now so the browser does not start
+				// its own bounce before the pull begins.
+				if (dy > 0 && dy >= Math.abs(dx) && e.cancelable) e.preventDefault();
+				return;
+			}
 			if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) {
 				tracking = false;
 				return;
