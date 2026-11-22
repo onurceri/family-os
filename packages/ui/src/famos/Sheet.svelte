@@ -2,12 +2,14 @@
 	import { tick, type Snippet } from 'svelte';
 	import { Button } from '../components/button/index.js';
 	import { focusFirst, trapTab } from './focus.js';
+	import { lockPageScroll, pullToClose } from './sheet-gesture.js';
 
 	/**
 	 * The form container on phones and tablets: full height from
 	 * 12 px below the top, radius 14, a grab handle and a bar with Cancel, the title and Save. A
 	 * `half` sheet (at most 85 %) is for pickers. A modal dialog: focus moves to the first field,
-	 * Tab is trapped, Escape or the scrim asks `onclose`, focus returns to what opened it. Omit
+	 * Tab is trapped, Escape, the scrim or pulling the sheet down asks `onclose`, focus returns to
+	 * what opened it, and the page under it does not scroll. Omit
 	 * `onsave` for a sheet without a Save button (a picker), omit `cancelLabel` for one without Cancel.
 	 */
 	let {
@@ -25,7 +27,7 @@
 	}: {
 		open: boolean;
 		title: string;
-		/** Cancel, Escape, the scrim. The page decides whether to ask about unsaved changes. */
+		/** Cancel, Escape, the scrim, a pull down. The page decides whether to ask about unsaved changes. */
 		onclose: () => void;
 		onsave?: () => void;
 		/** Omit for a sheet whose only button is the one on the right (a half sheet with Done). */
@@ -51,6 +53,16 @@
 		return () => {
 			if (opener?.isConnected) opener.focus();
 			opener = null;
+		};
+	});
+
+	$effect(() => {
+		if (!open || !panel) return;
+		const unlock = lockPageScroll();
+		const stop = pullToClose(panel, () => onclose());
+		return () => {
+			stop();
+			unlock();
 		};
 	});
 
@@ -113,6 +125,7 @@
 		z-index: 60;
 		background: var(--sheet-scrim);
 		animation: fade 200ms ease-out;
+		touch-action: none;
 	}
 	.sheet {
 		position: fixed;
@@ -129,6 +142,10 @@
 		box-shadow: var(--shadow-sheet);
 		outline: none;
 		animation: rise 240ms ease-out;
+		transition: transform 200ms ease-out;
+	}
+	.sheet:global([data-pulling]) {
+		transition: none;
 	}
 	.half {
 		top: auto;
@@ -187,6 +204,7 @@
 	}
 	.body {
 		overflow: auto;
+		overscroll-behavior: contain;
 		padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
 	}
 	@keyframes rise {
@@ -202,6 +220,7 @@
 	@media (prefers-reduced-motion: reduce) {
 		.sheet {
 			animation: fade 1ms;
+			transition: none;
 		}
 		.scrim {
 			animation: none;
