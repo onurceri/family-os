@@ -5,7 +5,7 @@ vi.mock('./i18n.svelte.js', () => ({ t: (key: string) => key }));
 vi.mock('./toast.svelte.js', () => ({ toasts: { show: () => {} } }));
 vi.mock('./push.svelte.js', () => ({ push: { release: async () => {} } }));
 vi.mock('./sign-out-confirm.svelte.js', () => ({ signOutConfirm: { ask: async () => true } }));
-const { signInWithPin } = await import('./auth.js');
+const { signInWithPassword, signInWithPin } = await import('./auth.js');
 
 function answer(status: number, body: unknown, headers: Record<string, string> = {}) {
 	vi.stubGlobal(
@@ -39,5 +39,10 @@ describe('sign-in results', () => {
 		expect(await signInWithPin('member_a', '1234')).toEqual({ kind: 'invalid' });
 		answer(200, { ok: true });
 		expect(await signInWithPin('member_a', '1234')).toEqual({ kind: 'ok' });
+	});
+
+	it('does not blame PINs for a refused email sign-in', async () => {
+		answer(403, { code: 'INVALID_ORIGIN', message: 'Invalid origin' });
+		expect(await signInWithPassword('a@example.com', 'secret')).toEqual({ kind: 'error' });
 	});
 });

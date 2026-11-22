@@ -38,7 +38,12 @@ async function post(path: string, body: unknown): Promise<SignInResult> {
 			const body = (await res.json().catch(() => null)) as { code?: unknown } | null;
 			return { kind: body?.code === 'LOCKED' ? 'locked' : 'limited', minutes: waitMinutes(res) };
 		}
-		if (res.status === 403) return result('untrusted');
+		if (res.status === 403) {
+			// Only the PIN check says the device is not trusted; any other refusal (an address the
+			// server does not take as its own) is not about PINs.
+			const body = (await res.json().catch(() => null)) as { code?: unknown } | null;
+			return result(body?.code === 'UNTRUSTED_DEVICE' ? 'untrusted' : 'error');
+		}
 		if (res.status === 401 || res.status === 400) return result('invalid');
 		return result('error');
 	} catch {
