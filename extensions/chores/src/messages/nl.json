@@ -8,7 +8,7 @@
 	"notify_kind_chore_due": "Er staat een klusje gepland en jij bent aan de beurt",
 	"chore_due_title": "Jouw beurt: {{title}}",
 	"chore_due_today": "Het moet vandaag gebeuren.",
-	"notify_kind_left_today": "'s Avonds: je klusjes die vandaag nog openstaan",
+	"notify_kind_left_today": "Je klusjes die vandaag nog openstaan",
 	"left_today_title_one": "{{count}} klusje staat vandaag nog open",
 	"left_today_title_other": "{{count}} klusjes staan vandaag nog open",
 	"left_today_body": "Voor vandaag of te laat, en jij bent aan de beurt.",
@@ -137,5 +137,15 @@
 	"today_ring_none": "{{name}}: vandaag geen klusjes",
 	"today_title": "Klusjes vandaag",
 	"today_block": "Klusjes",
-	"today_block_hint": "Hoe ver iedereen is met de klusjes van vandaag."
+	"today_block_hint": "Hoe ver iedereen is met de klusjes van vandaag.",
+	"page_options": "Opties voor Klusjes",
+	"reminder_times": "Herinneringstijden",
+	"reminder_times_hint": "Wie “Je klusjes die vandaag nog openstaan” aanzet in de meldingsinstellingen, hoort op deze tijden hoeveel van zijn of haar klusjes nog open staan.",
+	"reminder_times_saved": "Herinneringstijden opgeslagen",
+	"reminder_time_n": "Tijd {{n}}",
+	"reminder_time_remove": "Tijd {{n}} verwijderen",
+	"reminder_time_add": "Een tijd toevoegen",
+	"reminder_times_empty": "Laat minstens één tijd staan.",
+	"reminder_times_invalid": "Vul elke tijd in als uren en minuten.",
+	"reminder_times_duplicate": "Elke tijd mag maar één keer voorkomen."
 }

@@ -111,6 +111,9 @@ it('upgrades the previous release’s database, every migration it applied still
 		title: string;
 	}[];
 	expect(events.map((e) => e.title)).toContain('Dentist');
+	// A family from before the evening count's times chose none: it keeps its 18:00, and its chore stays.
+	expect(await read('chores.getSettings')).toEqual({ leftTodayTimes: ['18:00'] });
+	expect((await read('chores.listAllChores')).length).toBeGreaterThan(0);
 	// Members from before profile photos have none.
 	const photos = runtime.handle.sqlite
 		.prepare(

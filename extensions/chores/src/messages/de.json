@@ -8,7 +8,7 @@
 	"notify_kind_chore_due": "Eine Haushaltsaufgabe ist fällig und du bist dran",
 	"chore_due_title": "Du bist dran: {{title}}",
 	"chore_due_today": "Sie ist heute fällig.",
-	"notify_kind_left_today": "Am Abend: deine heute noch offenen Haushaltsaufgaben",
+	"notify_kind_left_today": "Deine heute noch offenen Haushaltsaufgaben",
 	"left_today_title_one": "{{count}} Haushaltsaufgabe ist heute noch offen",
 	"left_today_title_other": "{{count}} Haushaltsaufgaben sind heute noch offen",
 	"left_today_body": "Heute fällig oder überfällig, und du bist dran.",
@@ -137,5 +137,15 @@
 	"today_ring_none": "{{name}}: heute keine Haushaltsaufgaben",
 	"today_title": "Heutige Haushaltsaufgaben",
 	"today_block": "Haushaltsaufgaben",
-	"today_block_hint": "Wie weit jede Person mit den heutigen Haushaltsaufgaben ist."
+	"today_block_hint": "Wie weit jede Person mit den heutigen Haushaltsaufgaben ist.",
+	"page_options": "Optionen für Haushaltsaufgaben",
+	"reminder_times": "Erinnerungszeiten",
+	"reminder_times_hint": "Wer in den Benachrichtigungseinstellungen „Deine heute noch offenen Haushaltsaufgaben“ einschaltet, erfährt zu diesen Zeiten, wie viele seiner Aufgaben noch offen sind.",
+	"reminder_times_saved": "Erinnerungszeiten gespeichert",
+	"reminder_time_n": "Uhrzeit {{n}}",
+	"reminder_time_remove": "Uhrzeit {{n}} entfernen",
+	"reminder_time_add": "Uhrzeit hinzufügen",
+	"reminder_times_empty": "Mindestens eine Uhrzeit bleibt.",
+	"reminder_times_invalid": "Gib jede Uhrzeit mit Stunden und Minuten an.",
+	"reminder_times_duplicate": "Jede Uhrzeit kann nur einmal vorkommen."
 }

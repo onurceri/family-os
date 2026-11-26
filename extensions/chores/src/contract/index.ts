@@ -1,5 +1,5 @@
 import { idSchema, wholeRecord } from '@famos/sdk';
-import { IsoDateSchema, RecurrenceSchema } from '@famos/time';
+import { IsoDateSchema, IsoTimeSchema, RecurrenceSchema } from '@famos/time';
 import { z } from 'zod';
 
 /**
@@ -165,3 +165,26 @@ export const TodayByMemberSchema = z.array(TodayChoresSchema);
 
 /** Where the app opens a chore. */
 export const choreHref = (choreId: string) => `/chores/${choreId}`;
+
+/** The most times a day the evening count may come. */
+export const LEFT_TODAY_MAX_TIMES = 4;
+
+/** When the evening count comes until the family chooses otherwise (family local time). */
+export const DEFAULT_LEFT_TODAY_TIMES: string[] = ['18:00'];
+
+/** One to four different times of day, kept in order. */
+export const LeftTodayTimesSchema = z
+	.array(IsoTimeSchema)
+	.min(1)
+	.max(LEFT_TODAY_MAX_TIMES)
+	.refine((times) => new Set(times).size === times.length, 'A time can be listed once')
+	.transform((times) => [...times].sort())
+	.describe('Times of day as HH:MM in the family time zone');
+
+export const SetLeftTodayTimesSchema = z.object({ times: LeftTodayTimesSchema });
+export type SetLeftTodayTimesInput = z.input<typeof SetLeftTodayTimesSchema>;
+
+export const ChoresSettingsSchema = z.object({
+	leftTodayTimes: z.array(IsoTimeSchema).describe('When the evening count comes, in order'),
+});
+export type ChoresSettings = z.infer<typeof ChoresSettingsSchema>;

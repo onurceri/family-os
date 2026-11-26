@@ -8,7 +8,7 @@
 	"notify_kind_chore_due": "A chore is due and it is your turn",
 	"chore_due_title": "Your turn: {{title}}",
 	"chore_due_today": "It is due today.",
-	"notify_kind_left_today": "In the evening: your chores still open today",
+	"notify_kind_left_today": "Your chores still open today",
 	"left_today_title_one": "{{count}} chore still open today",
 	"left_today_title_other": "{{count}} chores still open today",
 	"left_today_body": "Due today or late, and it is your turn.",
@@ -137,5 +137,15 @@
 	"today_ring_none": "{{name}}: no chores today",
 	"today_title": "Chores today",
 	"today_block": "Chores",
-	"today_block_hint": "How far each person is with today's chores."
+	"today_block_hint": "How far each person is with today's chores.",
+	"page_options": "Options for Chores",
+	"reminder_times": "Reminder times",
+	"reminder_times_hint": "People who switch on “Your chores still open today” in their notification settings hear how many of their chores are still open at these times.",
+	"reminder_times_saved": "Reminder times saved",
+	"reminder_time_n": "Time {{n}}",
+	"reminder_time_remove": "Remove time {{n}}",
+	"reminder_time_add": "Add a time",
+	"reminder_times_empty": "Keep at least one time.",
+	"reminder_times_invalid": "Enter every time as hours and minutes.",
+	"reminder_times_duplicate": "Each time can be listed once."
 }

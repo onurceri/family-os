@@ -41,6 +41,7 @@ const advanceTo = async (ms: number) => {
 	k.clock.set(ms);
 	await k.worker.drain();
 };
+const setTimes = (times: string[]) => applied(k, 'chores.setLeftTodayTimes', { times }, ayse.actor);
 const sent = () => channel.sent.filter((s) => s.message.title.includes('left_today_title'));
 const told = () => sent().map((s) => [s.memberId, s.message.title]);
 const title = (count: number) => `en|chores:left_today_title|${JSON.stringify({ count })}`;
@@ -91,7 +92,7 @@ describe('chores still open in the evening', () => {
 	it('tells nobody twice on the same day, even when the count runs again', async () => {
 		await create({ title: 'Dishes' });
 		await advanceTo(at(TODAY, '18:00'));
-		await k.ctx.enqueue(LEFT_TODAY_JOB, {}, { runAt: at(TODAY, '18:30') });
+		await k.ctx.enqueue(LEFT_TODAY_JOB, { at: at(TODAY, '18:00') }, { runAt: at(TODAY, '18:30') });
 		await advanceTo(at(TODAY, '18:30'));
 		expect(told()).toEqual([[ayse.id, title(1)]]);
 		expect(await inApp(ayse.actor)).toHaveLength(1);
@@ -152,5 +153,72 @@ describe('chores still open in the evening', () => {
 		await advanceTo(lisbon);
 		expect(told()).toEqual([[ayse.id, title(1)]]);
 		expect(await planned()).toEqual([epochOf('2026-10-07', '18:00', 'Europe/Lisbon')]);
+	});
+
+	describe('at the times the family chose', () => {
+		it('comes at each of them, once per time and person, also when a count runs again', async () => {
+			await create({ title: 'Dishes' });
+			await setTimes(['18:00', '12:00']);
+			await advanceTo(at(TODAY, '11:59'));
+			expect(sent()).toEqual([]);
+			await advanceTo(at(TODAY, '12:00'));
+			expect(told()).toEqual([[ayse.id, title(1)]]);
+			expect(await planned()).toEqual([at(TODAY, '18:00')]);
+			await advanceTo(at(TODAY, '18:00'));
+			expect(told()).toEqual([
+				[ayse.id, title(1)],
+				[ayse.id, title(1)],
+			]);
+			expect(await inApp(ayse.actor)).toHaveLength(2);
+			expect(await planned()).toEqual([at('2026-10-07', '12:00')]);
+
+			await k.ctx.enqueue(
+				LEFT_TODAY_JOB,
+				{ at: at(TODAY, '12:00') },
+				{ runAt: at(TODAY, '18:30') },
+			);
+			await advanceTo(at(TODAY, '18:30'));
+			expect(sent()).toHaveLength(2);
+		});
+
+		it('follows a changed time, and the count planned for the old time tells nobody', async () => {
+			await create({ title: 'Dishes' });
+			await advanceTo(at(TODAY, '10:00'));
+			await setTimes(['20:00']);
+			await advanceTo(at(TODAY, '18:00'));
+			expect(sent()).toEqual([]);
+			expect(await planned()).toEqual([at(TODAY, '20:00')]);
+			await advanceTo(at(TODAY, '20:00'));
+			expect(told()).toEqual([[ayse.id, title(1)]]);
+			expect(await planned()).toEqual([at('2026-10-07', '20:00')]);
+		});
+
+		it('does not tell late for a time added earlier today', async () => {
+			await create({ title: 'Dishes' });
+			await advanceTo(at(TODAY, '15:00'));
+			await setTimes(['12:00', '18:00']);
+			expect(await planned()).toContain(at(TODAY, '18:00'));
+			await advanceTo(at(TODAY, '18:00'));
+			expect(told()).toEqual([[ayse.id, title(1)]]);
+		});
+
+		it('says nothing of yesterday for a count that slept past midnight', async () => {
+			await create({ title: 'Dishes' });
+			await setTimes(['09:00', '18:00']);
+			await advanceTo(at(TODAY, '08:00'));
+			await advanceTo(at('2026-10-07', '08:00'));
+			expect(sent()).toEqual([]);
+			expect(await planned()).toEqual([at('2026-10-07', '09:00')]);
+			await advanceTo(at('2026-10-07', '09:00'));
+			expect(told()).toEqual([[ayse.id, title(1)]]);
+		});
+
+		it('tells once, for the latest time that has come, when several were missed', async () => {
+			await create({ title: 'Dishes' });
+			await setTimes(['11:00', '12:00', '13:00']);
+			await advanceTo(at(TODAY, '10:30'));
+			await advanceTo(at(TODAY, '13:30'));
+			expect(told()).toEqual([[ayse.id, title(1)]]);
+		});
 	});
 });

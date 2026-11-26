@@ -8,7 +8,7 @@
 	"notify_kind_chore_due": "Una tarea de casa vence y es tu turno",
 	"chore_due_title": "Tu turno: {{title}}",
 	"chore_due_today": "Vence hoy.",
-	"notify_kind_left_today": "Por la tarde: tus tareas de casa aún pendientes hoy",
+	"notify_kind_left_today": "Tus tareas de casa aún pendientes hoy",
 	"left_today_title_one": "{{count}} tarea de casa sigue pendiente hoy",
 	"left_today_title_other": "{{count}} tareas de casa siguen pendientes hoy",
 	"left_today_title_many": "{{count}} tareas de casa siguen pendientes hoy",
@@ -150,5 +150,15 @@
 	"today_ring_none": "{{name}}: sin tareas de casa hoy",
 	"today_title": "Tareas de casa de hoy",
 	"today_block": "Tareas",
-	"today_block_hint": "Cuánto ha avanzado cada persona con las tareas de hoy."
+	"today_block_hint": "Cuánto ha avanzado cada persona con las tareas de hoy.",
+	"page_options": "Opciones de Tareas de casa",
+	"reminder_times": "Horas del recordatorio",
+	"reminder_times_hint": "Quien active «Tus tareas de casa aún pendientes hoy» en sus ajustes de notificaciones recibe, a estas horas, el número de tareas que le quedan por hacer.",
+	"reminder_times_saved": "Horas del recordatorio guardadas",
+	"reminder_time_n": "Hora {{n}}",
+	"reminder_time_remove": "Quitar la hora {{n}}",
+	"reminder_time_add": "Añadir una hora",
+	"reminder_times_empty": "Deja al menos una hora.",
+	"reminder_times_invalid": "Escribe cada hora con horas y minutos.",
+	"reminder_times_duplicate": "Cada hora solo puede aparecer una vez."
 }

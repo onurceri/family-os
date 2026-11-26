@@ -12,11 +12,13 @@
 		Fab,
 		focusFirstInvalid,
 		ListDetail,
+		type MenuItem,
 		RepeatScope,
 		type RepeatScopeChoice,
 		Section,
 		Segmented,
 		readFirst,
+		RecordMenu,
 		SidePanel,
 		ViewOnly,
 		openPath,
@@ -25,6 +27,7 @@
 	import type { Chore } from '../contract/index.js';
 	import ChoreForm from './ChoreForm.svelte';
 	import ChoreRow from './ChoreRow.svelte';
+	import ReminderTimes from './ReminderTimes.svelte';
 	import {
 		archiveChore,
 		createChore,
@@ -111,6 +114,21 @@
 	const mayArchive = $derived(app.access('chores.archiveChore') !== 'no');
 	const canDo = (c: Chore) =>
 		mayTick && (holdsEdit || c.assigneeId === null || c.assigneeId === me);
+
+	// Who may change chores also chooses when the evening count of open chores comes.
+	const mayChooseTimes = $derived(app.can('chores.edit'));
+	let choosingTimes = $state(false);
+	const menu = $derived<MenuItem[]>(
+		mayChooseTimes
+			? [
+					{
+						id: 'reminder-times',
+						label: t('reminder_times'),
+						onselect: () => (choosingTimes = true),
+					},
+				]
+			: [],
+	);
 
 	let onlyMine = $state(false);
 	const visible = $derived(
@@ -304,6 +322,18 @@
 	{/if}
 {/snippet}
 
+{#snippet headActions()}
+	{#if !empty}{@render add()}{/if}
+	{#if menu.length > 0}
+		<RecordMenu
+			name={t('title')}
+			label={t('page_options')}
+			cancelLabel={t('cancel')}
+			items={menu}
+		/>
+	{/if}
+{/snippet}
+
 {#snippet archiveButton()}
 	{#if mayArchive}
 		<ConfirmButton
@@ -443,7 +473,7 @@
 	</div>
 {/snippet}
 
-<ListDetail title={t('title')} actions={empty ? undefined : add} selected={false}>
+<ListDetail title={t('title')} actions={headActions} selected={false}>
 	{#snippet list()}
 		{#if empty}
 			<EmptyState art="chores" title={t('empty')} hint={mayAdd ? t('empty_hint') : undefined}>
@@ -491,5 +521,7 @@
 >
 	{@render formCard()}
 </SidePanel>
+
+<ReminderTimes open={choosingTimes} onclose={() => (choosingTimes = false)} />
 
 <RepeatScope open={asking} words={scopeWords} onpick={pick} onclose={() => (asking = false)} />
