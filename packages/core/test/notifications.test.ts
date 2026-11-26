@@ -603,6 +603,108 @@ describe('reading and preferences', () => {
 	});
 });
 
+describe('kinds only for those who ask', () => {
+	const evening = defineNotificationKind({
+		id: 'nudge.evening',
+		label: 'nudge:kind',
+		optIn: true,
+		// Ignored: nothing is on until the member switches it on.
+		defaultChannels: ['webpush'],
+	});
+	let o: TestKernel;
+	beforeEach(async () => {
+		o = await createTestKernel({
+			extensions: [defineTestExtension({ id: 'nudge', notifications: [evening] })],
+			channels: [web, tg],
+		});
+	});
+	afterEach(() => o.close());
+
+	const send = async (members: string[]) => {
+		await o.ctx.notify({
+			kind: evening.id,
+			to: { members },
+			title: { key: 'app:x' },
+		});
+		await o.worker.drain();
+	};
+	const inApp = async (actor: Parameters<TestKernel['runner']['invoke']>[2]) =>
+		(await o.route('core.listNotifications').call({ actor })).items as unknown[];
+	const kindsOf = async (actor: Parameters<TestKernel['runner']['invoke']>[2]) =>
+		(await o.route('core.getNotificationPreferences').call({ actor })).kinds as {
+			id: string;
+			defaultChannels: string[];
+		}[];
+
+	it('reaches nobody who has not switched it on, not even in the app', async () => {
+		const a = await o.member('admin');
+		await send([a.member.id]);
+		expect(web.sent).toEqual([]);
+		expect(tg.sent).toEqual([]);
+		expect(await inApp(a.actor)).toEqual([]);
+	});
+
+	it('reaches whoever switched on a channel, through that channel only', async () => {
+		const a = await o.member('admin');
+		const b = await o.member('member');
+		await o.runner.invoke(
+			'core.setNotificationPreferences',
+			{ kinds: { [evening.id]: { telegram: true } }, quietHours: null },
+			a.actor,
+		);
+		await send([a.member.id, b.member.id]);
+		expect(tg.sent.map((s) => s.memberId)).toEqual([a.member.id]);
+		expect(web.sent).toEqual([]);
+		expect(await inApp(a.actor)).toHaveLength(1);
+		expect(await inApp(b.actor)).toEqual([]);
+	});
+
+	it('stops once no switched-on channel can reach them, so nothing is left they cannot turn off', async () => {
+		const a = await o.member('admin');
+		await o.runner.invoke(
+			'core.setNotificationPreferences',
+			{ kinds: { [evening.id]: { telegram: true } }, quietHours: null },
+			a.actor,
+		);
+		tg.available = [];
+		await send([a.member.id]);
+		expect(tg.sent).toEqual([]);
+		expect(await inApp(a.actor)).toEqual([]);
+	});
+
+	it('starts with every channel off, and is listed only to someone who could switch it on', async () => {
+		const a = await o.member('admin');
+		expect((await kindsOf(a.actor)).find((k) => k.id === evening.id)).toMatchObject({
+			defaultChannels: [],
+		});
+		web.available = [];
+		tg.available = [];
+		expect((await kindsOf(a.actor)).map((k) => k.id)).not.toContain(evening.id);
+		// Kinds everyone gets in the app stay listed.
+		expect((await kindsOf(a.actor)).map((k) => k.id)).toContain('core.draftWaiting');
+	});
+
+	it('leaves other kinds as they were: the in-app record for everyone', async () => {
+		const a = await o.member('admin');
+		await o.runner.invoke(
+			'core.setNotificationPreferences',
+			{
+				kinds: { 'core.draftWaiting': { webpush: false, telegram: false } },
+				quietHours: null,
+			},
+			a.actor,
+		);
+		await o.ctx.notify({
+			kind: 'core.draftWaiting',
+			to: { members: [a.member.id] },
+			title: { key: 'app:x' },
+		});
+		await o.worker.drain();
+		expect(web.sent).toEqual([]);
+		expect(await inApp(a.actor)).toHaveLength(1);
+	});
+});
+
 describe('kinds', () => {
 	it('must be namespaced by their extension and unique', () => {
 		const kind = (id: string) => defineNotificationKind({ id, label: 'x:y' });

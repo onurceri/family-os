@@ -17,6 +17,12 @@ export interface NotificationKindDefinition {
 	 * cannot set it. Delivery is unchanged: recipients come from the notify call.
 	 */
 	readonly audience?: string;
+	/**
+	 * Only for those who ask for it. Every channel is off by default (whatever
+	 * `defaultChannels` says), and a recipient who has not switched on at least one channel for
+	 * this kind gets nothing at all, not even the in-app record.
+	 */
+	readonly optIn?: boolean;
 }
 
 const KIND_ID = /^[a-z][a-z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/;
