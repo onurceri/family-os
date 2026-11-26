@@ -12,6 +12,7 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 | Event reminders | The event's people (all who see the calendar if none) | Timed: 30 min before. All-day: at the [reminder time](region.md) that day (09:00 unless changed). Set per event in **Reminder** ([Calendars](calendars.md)). |
 | Task due dates | Assignee (all who see lists if none) | At due time, or the [reminder time](region.md) without one. |
 | Chores | Whose turn it is | The [reminder time](region.md) on the due day. Anyone-may-do chores remind nobody ([Chores](chores.md)). |
+| Chores still open today | Whose turn it is, only if switched on | 18:00 each evening: how many of yours are due today or late. Off until you switch it on. Opens Chores. |
 | Duties | Assignee (all who see records if none) | Days before, and on the due day, at the [reminder time](region.md) ([What needs doing and Papers](records.md)). |
 | Backup could not be sent off | Admins | [Backups](backups.md) |
 | Auto-approval stopped | Admins | [Auto-approval](auto-approval.md) |
@@ -59,4 +60,4 @@ Switch on **Quiet hours**, set **From** and **Until** (default 22:00–07:00; ma
 
 ## What goes where
 
-Under quiet hours each kind has a switch per channel: **Phone notifications** (once a device is on) and **Telegram** (once linked). Choices are yours alone. Without a channel the page lists the kinds you get in the app, with no switches, and says how to get them on a phone or in Telegram too. Kinds you can never get (backup message for non-admins) are not listed.
+Under quiet hours each kind has a switch per channel: **Phone notifications** (once a device is on) and **Telegram** (once linked). Choices are yours alone. Without a channel the page lists the kinds you get in the app, with no switches, and says how to get them on a phone or in Telegram too. Kinds you can never get (backup message for non-admins) are not listed. Some kinds (**Chores still open today**) are off until you switch one of their channels on, and then arrive in the app too; they need a phone or Telegram channel, so without one they are not listed and do not arrive.
