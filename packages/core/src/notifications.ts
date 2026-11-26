@@ -13,6 +13,7 @@ import {
 	type JobContext,
 	type JobQueue,
 	type Logger,
+	NotificationGroupSchema,
 	type NotificationMessage,
 	type NotifyRequest,
 	NotifyRequestSchema,
@@ -556,6 +557,14 @@ export function createNotifications(deps: NotificationsDeps) {
 					label: z.string(),
 					/** Channel ids on by default. */
 					defaultChannels: z.array(z.string()),
+					/** Only for those who switch it on: every channel starts off. */
+					optIn: z.boolean(),
+					/** The part of the preferences screen it is listed in. */
+					group: NotificationGroupSchema,
+					/** Translated: one line saying what it is. */
+					description: z.string().optional(),
+					/** Where what it tells about is set up: an in-app path and translated words. */
+					link: z.object({ path: z.string(), label: z.string() }).optional(),
 				}),
 			),
 			channels: z.array(
@@ -594,6 +603,12 @@ export function createNotifications(deps: NotificationsDeps) {
 							: k.defaultChannels
 								? [...k.defaultChannels]
 								: channels.filter((c) => c.onByDefault).map((c) => c.id),
+						optIn: k.optIn === true,
+						group: k.group ?? 'everyday',
+						...(k.description && { description: deps.translate(locale, k.description) }),
+						...(k.link && {
+							link: { path: k.link.path, label: deps.translate(locale, k.link.label) },
+						}),
 					})),
 				channels: reach.map(({ c, available }) => ({
 					id: c.id,

@@ -37,6 +37,7 @@ export const DEFAULT_DRAFT_NOTIFY_DELAY_MS = 30_000;
 export const autoApprovalStopped = defineNotificationKind({
 	id: 'core.autoApprovalStopped',
 	label: 'app:notify_kind_auto_approval_stopped',
+	group: 'approvals',
 	audience: CORE_CAPABILITIES.autoApproveManage.id,
 });
 

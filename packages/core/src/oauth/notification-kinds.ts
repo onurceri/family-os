@@ -5,12 +5,14 @@ import { CORE_CAPABILITIES } from '../core-capabilities.ts';
 export const aiAppConnected = defineNotificationKind({
 	id: 'core.aiAppConnected',
 	label: 'app:notify_kind_ai_app_connected',
+	group: 'system',
 	audience: CORE_CAPABILITIES.mcpUse.id,
 });
 /** The member is told when an app's sign-in was cut off because it was used twice. */
 export const aiAppDisconnected = defineNotificationKind({
 	id: 'core.aiAppDisconnected',
 	label: 'app:notify_kind_ai_app_disconnected',
+	group: 'system',
 	audience: CORE_CAPABILITIES.mcpUse.id,
 });
 export const oauthNotifications = [aiAppConnected, aiAppDisconnected];

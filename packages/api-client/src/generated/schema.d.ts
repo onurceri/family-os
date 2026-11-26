@@ -16037,6 +16037,14 @@ export interface operations {
                             id: string;
                             label: string;
                             defaultChannels: string[];
+                            optIn: boolean;
+                            /** @enum {string} */
+                            group: "everyday" | "approvals" | "system";
+                            description?: string;
+                            link?: {
+                                path: string;
+                                label: string;
+                            };
                         }[];
                         channels: {
                             id: string;

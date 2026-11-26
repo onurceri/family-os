@@ -224,6 +224,7 @@ All of them live in `@famos/ui/famos` (vendored shadcn-svelte primitives in `@fa
 | `PageTabs` | Underline tabs for page sections only. |
 | `Tile` | The tile of §5.6 (48/56 px, title 600). |
 | `SettingRow`, `SwitchRow` | Inside `Card`; control column 20 rem; `inline` variant on phones for switches. |
+| `Switch` | The switch alone (§5.3), for a row with several: a native checkbox with `role="switch"`, in a `<label>` or with its own `label`. `SwitchRow` is built on it. |
 | `SidePanel` | Footer slot, dirty check, URL sync, 360 px at 1024–1279; renders the sheet below 1024. |
 | `Page` | The one page frame: template, width class, centring, page head (§3.2). |
 | `ListDetail` | 280 px list column; single-item rule (§3.6); the `list-detail` frame. |
@@ -295,6 +296,7 @@ Sidebar rows 36 px, active = `surface` + `shadow-lit`; the bell and `+` in the h
 
 - **Row**: `display:flex; gap:12px; min-height:48px; padding:6px 12px`. Leading: disc / avatar / check / 18 px icon in `ink-soft`. Text: title 15/600 `ink`, meta 13/400 `ink-soft`, each one line with an ellipsis (two-line rows are 56 px). Trailing: pill, amount (15/700), secondary button `sm`, `⋯`, chevron (`ink-soft`), avatar. Hover (mouse only): `idle` at 55 %. Done: title 500 line-through `ink-soft`.
 - A row's control (a switch, buttons) is its last trailing item, flush to the row's end so every control sits in one column; the row's state goes on the meta line, not beside the control. When the text opens a sheet, a 14 px `ink-soft` chevron follows the meta ("On · Speed 1 ›"), never the control. A row without a control (a sensor) keeps its value trailing, on the same edge.
+- **Matrix row**: one thing with several switches (a notification kind with one per channel): the text at the left (title wraps, never cut; a line and a link may follow), then a `Switch` per column, 72 px wide each, under column heads in the section's actions (11/600 `ink-soft`, wrapped, never cut). Fixed widths, so columns line up without subgrid; with three columns or more a narrow card puts each switch, with its name, under the text and drops the heads.
 - **Tile**: a row on the wall (§2), 6 px apart. Idle tile: `idle`, no shadow. Selected: `shadow-lit` + 2 px `ink` inset ring.
 - **Card**: as in §2; padding 16 × 20 when it holds text instead of rows. `lit` variant: shadow, no line. `quiet` variant: `idle`.
 - `TodayRow` takes the tile style (title 600, 48 px); Needs you rows stay rows inside the lit card.

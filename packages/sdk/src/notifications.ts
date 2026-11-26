@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isSameOriginPath } from './same-origin-path.ts';
 
 /**
  * Notifications. Extensions declare the kinds of things they tell people
@@ -23,7 +24,24 @@ export interface NotificationKindDefinition {
 	 * this kind gets nothing at all, not even the in-app record.
 	 */
 	readonly optIn?: boolean;
+	/** i18n key: one line under the label on the preferences screen, saying what it is. */
+	readonly description?: string;
+	/**
+	 * Where what this kind tells about is set up: an in-app path (`/chores?reminder=1`) and the
+	 * i18n key of the link's words. Shown under the kind on the preferences screen.
+	 */
+	readonly link?: { readonly path: string; readonly label: string };
+	/** The part of the preferences screen it is listed in. Without it, `everyday`. */
+	readonly group?: NotificationGroup;
 }
+
+/**
+ * The parts of the preferences screen, in their order: what happens day to day, approvals, and the
+ * account and the server. A fixed set, so an extension's kinds sit beside related ones rather
+ * than in a group of their own.
+ */
+export const NotificationGroupSchema = z.enum(['everyday', 'approvals', 'system']);
+export type NotificationGroup = z.infer<typeof NotificationGroupSchema>;
 
 const KIND_ID = /^[a-z][a-z0-9]*(\.[a-z][a-zA-Z0-9]*)+$/;
 
@@ -33,6 +51,12 @@ export function defineNotificationKind(
 	if (!KIND_ID.test(definition.id)) {
 		throw new Error(
 			`Invalid notification kind "${definition.id}": use "<owner>.<name>", e.g. "inbox.itemFailed"`,
+		);
+	}
+	// Any origin will do: the question is only whether the path stays on it.
+	if (definition.link && !isSameOriginPath(definition.link.path, 'http://famos.invalid')) {
+		throw new Error(
+			`Invalid link of notification kind "${definition.id}": use a path inside the app, e.g. "/chores"`,
 		);
 	}
 	return definition;
