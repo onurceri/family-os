@@ -12,7 +12,7 @@ Everything is listed in the app; phone notifications and [Telegram](telegram.md)
 | Event reminders | The event's people (all who see the calendar if none) | Timed: 30 min before. All-day: at the [reminder time](region.md) that day (09:00 unless changed). Set per event in **Reminder** ([Calendars](calendars.md)). |
 | Task due dates | Assignee (all who see lists if none) | At due time, or the [reminder time](region.md) without one. |
 | Chores | Whose turn it is | The [reminder time](region.md) on the due day. Anyone-may-do chores remind nobody ([Chores](chores.md)). |
-| Your chores still open today | Whose turn it is, only if switched on | At the times the family sets (18:00 unless changed; up to four a day; Chores → ⋯ → Reminder times, for those who may edit chores): how many of yours are due today or late. Off until you switch it on. Opens Chores. |
+| Your chores still open today | Whose turn it is, only if switched on | At the times the family sets (18:00 unless changed; up to four a day; **Daily reminder** at the foot of Chores, changed by those who manage chores): how many of yours are due today or late. Off until you switch it on. Opens Chores. |
 | Duties | Assignee (all who see records if none) | Days before, and on the due day, at the [reminder time](region.md) ([What needs doing and Papers](records.md)). |
 | Backup could not be sent off | Admins | [Backups](backups.md) |
 | Auto-approval stopped | Admins | [Auto-approval](auto-approval.md) |

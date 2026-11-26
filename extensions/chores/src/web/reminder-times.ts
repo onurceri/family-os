@@ -1,4 +1,4 @@
-import { IsoTimeSchema } from '@famos/time';
+import { formatClock, IsoTimeSchema } from '@famos/time';
 import { LEFT_TODAY_MAX_TIMES } from '../contract/index.js';
 
 /** Whether the list in the form may be saved: one to four different, valid times of day. */
@@ -20,4 +20,43 @@ export function nextTime(times: string[]): string {
 		if (!times.includes(candidate)) return candidate;
 	}
 	return '12:00';
+}
+
+/** Whether the evening count reaches the viewer: on, off, or no channel yet to switch it on. */
+export type ReminderMine = 'on' | 'off' | 'no-channel';
+
+/** What the notification preferences route says, as far as the evening count needs it. */
+export interface PreferencesView {
+	kinds: readonly { id: string; defaultChannels: readonly string[] }[];
+	channels: readonly { id: string; available: boolean }[];
+	prefs: { kinds: Record<string, Record<string, boolean>> };
+}
+
+/**
+ * Whether the viewer gets the evening count, from their notification preferences: on when a
+ * channel that reaches them is switched on for it, off when none is, and `no-channel` when it is
+ * not offered to them (it needs a phone or Telegram first). Null without preferences (the viewer
+ * may not receive notifications).
+ */
+export function mineState(
+	preferences: PreferencesView | null,
+	kindId = 'chores.leftToday',
+): ReminderMine | null {
+	if (!preferences) return null;
+	const kind = preferences.kinds.find((k) => k.id === kindId);
+	if (!kind) return 'no-channel';
+	const chosen = preferences.prefs.kinds[kindId] ?? {};
+	const on = preferences.channels.some(
+		(c) => c.available && (chosen[c.id] ?? kind.defaultChannels.includes(c.id)),
+	);
+	return on ? 'on' : 'off';
+}
+
+/** The times as the family reads them (their clock: 18:00 or 6:00 PM), joined with commas. */
+export function formatTimes(
+	times: readonly string[],
+	dateLocale: string,
+	hourCycle: 'h12' | 'h23',
+): string {
+	return times.map((time) => formatClock(time, dateLocale, hourCycle)).join(', ');
 }

@@ -16,6 +16,8 @@ export const leftTodayKind = defineNotificationKind({
 	label: 'chores:notify_kind_left_today',
 	audience: CHORES_VIEW,
 	optIn: true,
+	description: 'chores:notify_kind_left_today_description',
+	link: { path: '/chores?reminder=1', label: 'chores:notify_kind_left_today_link' },
 });
 
 export const LEFT_TODAY_JOB = 'chores.leftToday';

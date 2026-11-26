@@ -43,7 +43,7 @@ Tap its circle. The next date is set, the turn passes on, and a notice offers **
 
 ## Reminders
 
-At the family's [reminder time](region.md) (09:00 unless changed) on the due day, the person whose turn it is gets a notification. Anyone-may-do chores remind nobody. Turn off per person in notification preferences. To hear how many of yours are still open, switch on **Your chores still open today** in [notification preferences](notifications.md#what-goes-where). It comes at the times the family sets (18:00 unless changed; up to four a day; Chores → ⋯ → Reminder times, for those who may edit chores).
+At the family's [reminder time](region.md) (09:00 unless changed) on the due day, the person whose turn it is gets a notification. Anyone-may-do chores remind nobody. Turn off per person in notification preferences. To hear how many of yours are still open, switch on **Your chores still open today** in [notification preferences](notifications.md#what-goes-where). It comes at the times the family sets (18:00 unless changed; up to four a day). **Daily reminder**, the last row on Chores, shows the times and whether it is on for you, with a link to your notification settings; those who manage chores change the times there, everyone else sees them.
 
 ## What the AI does here
 

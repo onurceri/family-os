@@ -1,6 +1,6 @@
 import { defineAction, defineRoute } from '@famos/sdk';
 import { ChoresSettingsSchema, SetLeftTodayTimesSchema } from '../contract/index.ts';
-import { choresEdit } from './capabilities.ts';
+import { choresEdit, choresView } from './capabilities.ts';
 import { scheduleLeftToday } from './left-today.ts';
 import { loadLeftTodayTimes, SETTINGS_ROW, tables } from './store.ts';
 
@@ -33,7 +33,8 @@ export const getSettings = defineRoute({
 	path: '/settings',
 	operationId: 'chores.getSettings',
 	summary: 'Chores settings: when the evening count of open chores comes',
-	requires: choresEdit.id,
+	// Everyone who may hear the count may see when it comes; only those who edit chores change it.
+	requires: choresView.id,
 	response: ChoresSettingsSchema,
 	async handle(ctx) {
 		return { leftTodayTimes: await loadLeftTodayTimes(ctx.db) };

@@ -1,3 +1,4 @@
+import type { Actor } from '@famos/sdk';
 import type { TestKernel } from '@famos/testing';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { applied, at, createKernel, mayCall, type Person, person } from './support.ts';
@@ -68,11 +69,24 @@ describe('the times of the evening count', () => {
 		expect((await read()).leftTodayTimes).toHaveLength(4);
 	});
 
-	it('is for those who may edit chores', async () => {
+	it('is set by those who may edit chores, and read by everyone who sees chores', async () => {
 		expect(await code(set(['19:00'], bora.actor))).toBe('forbidden');
-		expect(mayCall(k, bora.actor, 'chores.getSettings')).toBe(false);
+		expect(mayCall(k, bora.actor, 'chores.getSettings')).toBe(true);
 		expect(mayCall(k, ayse.actor, 'chores.getSettings')).toBe(true);
-		expect(await read()).toEqual({ leftTodayTimes: ['18:00'] });
+		expect(await k.route('chores.getSettings').call({ actor: bora.actor })).toEqual({
+			leftTodayTimes: ['18:00'],
+		});
+	});
+
+	it('is not read without chores.view', () => {
+		const screen = (capabilities: string[]): Actor => ({
+			kind: 'display',
+			deviceId: 'dev_1',
+			capabilities,
+			showNames: true,
+		});
+		expect(mayCall(k, screen(['calendar.view']), 'chores.getSettings')).toBe(false);
+		expect(mayCall(k, screen(['chores.view']), 'chores.getSettings')).toBe(true);
 	});
 
 	it('plans the next count at the new time', async () => {
