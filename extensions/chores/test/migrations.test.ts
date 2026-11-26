@@ -18,6 +18,7 @@ it('creates STRICT chores tables from empty', async () => {
 		'chores_assignees',
 		'chores_chores',
 		'chores_completions',
+		'chores_settings',
 	]);
 	expect(found.every((t) => t.strict === 1)).toBe(true);
 });
@@ -40,4 +41,23 @@ it('keeps one live completion per chore and due date', async () => {
 	await sql`delete from chores_chores where id = 'c1'`.execute(db);
 	const left = await sql<{ n: number }>`select count(*) as n from chores_completions`.execute(db);
 	expect(left.rows[0]?.n).toBe(0); // completions go with their chore
+});
+
+it('upgrades a 0.14 database: chores stay as they were and the evening count keeps its default', async () => {
+	const { db } = openDatabase({ path: ':memory:' });
+	const released = Object.fromEntries(
+		Object.entries(migrations).filter(([name]) => name !== '0003_settings'),
+	);
+	await runMigrations(db, [{ scope: 'chores', migrations: released }]);
+	await sql`insert into chores_chores (id, title, start_date, next_due, created_at, updated_at)
+		values ('c1', 'Dishes', '2026-10-06', '2026-10-06', 1, 1)`.execute(db);
+
+	await runMigrations(db, [{ scope: 'chores', migrations }]);
+
+	const chores = await sql`select id, title, next_due from chores_chores`.execute(db);
+	expect(chores.rows).toEqual([{ id: 'c1', title: 'Dishes', next_due: '2026-10-06' }]);
+	const settings = await sql`select * from chores_settings`.execute(db);
+	expect(settings.rows).toEqual([]); // no row: the default time applies
+	const list = await sql<{ name: string; strict: number }>`pragma table_list`.execute(db);
+	expect(list.rows.find((t) => t.name === 'chores_settings')?.strict).toBe(1);
 });

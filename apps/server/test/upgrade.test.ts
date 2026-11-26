@@ -37,6 +37,7 @@ const VERSION_MIGRATIONS = [
 	'calendar/0003_version',
 	'lists/0002_versions',
 	'chores/0002_versions',
+	'chores/0003_settings',
 	'board/0002_versions',
 	'board/0003_app_author',
 	'calendar/0004_series_end',

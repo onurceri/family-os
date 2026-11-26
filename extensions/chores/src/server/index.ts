@@ -18,7 +18,9 @@ import {
 	updateChore,
 } from './chores.ts';
 import { choresDigest } from './digest.ts';
+import { leftTodayJob, leftTodayKind, scheduleLeftToday } from './left-today.ts';
 import { choreDueKind, remindJob } from './reminders.ts';
+import { getSettings, setLeftTodayTimes } from './settings.ts';
 import { choresChanged } from './shared.ts';
 import { migrations } from './store.ts';
 import { getTodayByMember, todayByMemberAction } from './today.ts';
@@ -44,10 +46,14 @@ export default defineExtension({
 		listChores,
 		choresDigest,
 		todayByMemberAction,
+		setLeftTodayTimes,
 	],
-	routes: [listAllChores, getChore, getTodayByMember],
+	routes: [listAllChores, getChore, getTodayByMember, getSettings],
 	events: [choresChanged],
 	capabilities: [choresView, choresUse, choresEdit],
-	notifications: [choreDueKind],
-	jobs: [remindJob],
+	notifications: [choreDueKind, leftTodayKind],
+	jobs: [remindJob, leftTodayJob],
+	async register(ctx) {
+		await scheduleLeftToday(ctx);
+	},
 });

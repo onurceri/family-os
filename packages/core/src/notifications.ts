@@ -13,6 +13,7 @@ import {
 	type JobContext,
 	type JobQueue,
 	type Logger,
+	NotificationGroupSchema,
 	type NotificationMessage,
 	type NotifyRequest,
 	NotifyRequestSchema,
@@ -41,8 +42,9 @@ import type { CoreTables, NotificationsTable } from './tables.ts';
 
 /**
  * Notifications. `core.notify` writes one in-app row per recipient and enqueues one
- * `core.deliver` job per enabled, available channel; `core.deliver` renders the text in the
- * recipient's language, waits out quiet hours, and calls the channel. Titles and bodies are
+ * `core.deliver` job per enabled, available channel (a kind only for those who ask for it,
+ * `optIn`, skips a recipient who switched on no channel for it); `core.deliver` renders the text
+ * in the recipient's language, waits out quiet hours, and calls the channel. Titles and bodies are
  * family content: they are never logged.
  */
 export type Translate = (locale: string, key: string, params?: Record<string, unknown>) => string;
@@ -95,10 +97,15 @@ export interface BoundChannel {
 	send(ctx: JobContext, memberId: string, message: NotificationMessage): Promise<'sent' | 'gone'>;
 }
 
+type KindDefaults = {
+	defaultChannels?: readonly string[] | undefined;
+	optIn?: boolean | undefined;
+};
+
 /** Whether a channel is switched on for a kind: the member's choice, else the kind's default. */
 function channelEnabled(
 	prefs: NotificationPrefs,
-	kind: { id: string; defaultChannels?: readonly string[] | undefined },
+	kind: KindDefaults & { id: string },
 	channel: Pick<BoundChannel, 'id' | 'onByDefault'>,
 ): boolean {
 	const chosen = prefs.kinds[kind.id]?.[channel.id];
@@ -106,11 +113,14 @@ function channelEnabled(
 	return defaultOn(kind, channel);
 }
 
-/** A kind that names its default channels decides alone; otherwise each channel says. */
-const defaultOn = (
-	kind: { defaultChannels?: readonly string[] | undefined },
-	channel: Pick<BoundChannel, 'id' | 'onByDefault'>,
-) => (kind.defaultChannels ? kind.defaultChannels.includes(channel.id) : channel.onByDefault);
+/**
+ * A kind only for those who ask for it starts with every channel off; a kind that names its
+ * default channels decides alone; otherwise each channel says.
+ */
+const defaultOn = (kind: KindDefaults, channel: Pick<BoundChannel, 'id' | 'onByDefault'>) => {
+	if (kind.optIn) return false;
+	return kind.defaultChannels ? kind.defaultChannels.includes(channel.id) : channel.onByDefault;
+};
 
 const minutesOf = (time: string) => {
 	const [h, m] = time.split(':');
@@ -287,13 +297,17 @@ export function createNotifications(deps: NotificationsDeps) {
 					)
 						use.push(channel.id);
 				}
+				// A kind only for those who ask needs a channel they switched on and still have: without
+				// one the preferences page offers no switch, so an in-app row could not be turned off.
+				if (kind.optIn && use.length === 0) continue;
 				plan.set(memberId, use);
 			}
+			if (plan.size === 0) return;
 
 			const dedupeKey = request.dedupeKey ?? `notify:${request.id}`;
 			const created = await ctx.db.transaction().execute(async (trx) => {
 				const made: string[] = [];
-				for (const memberId of recipients) {
+				for (const [memberId, use] of plan) {
 					const id = ctx.ids.next('notification');
 					const row: NotificationsTable = {
 						id,
@@ -317,7 +331,7 @@ export function createNotifications(deps: NotificationsDeps) {
 						.executeTakeFirst();
 					if (Number(result.numInsertedOrUpdatedRows ?? 0) === 0) continue;
 					made.push(memberId);
-					for (const channel of plan.get(memberId) ?? []) {
+					for (const channel of use) {
 						await deps.queue.enqueue(
 							trx,
 							'core.deliver',
@@ -543,6 +557,14 @@ export function createNotifications(deps: NotificationsDeps) {
 					label: z.string(),
 					/** Channel ids on by default. */
 					defaultChannels: z.array(z.string()),
+					/** Only for those who switch it on: every channel starts off. */
+					optIn: z.boolean(),
+					/** The part of the preferences screen it is listed in. */
+					group: NotificationGroupSchema,
+					/** Translated: one line saying what it is. */
+					description: z.string().optional(),
+					/** Where what it tells about is set up: an in-app path and translated words. */
+					link: z.object({ path: z.string(), label: z.string() }).optional(),
 				}),
 			),
 			channels: z.array(
@@ -562,29 +584,39 @@ export function createNotifications(deps: NotificationsDeps) {
 			const features = deps.features();
 			const held = deps.access().effective(roleOf(actor));
 			const channels = deps.channels();
+			const reach = await Promise.all(
+				channels.map(async (c) => ({ c, available: await reachable(c, memberId, ctx.logger) })),
+			);
+			const prefs = await readPrefs(ctx.db, memberId);
+			const anyReachable = reach.some((r) => r.available);
 			return {
 				kinds: [...deps.registry().notificationKinds.values()]
 					.filter((k) => features.isOn(ownerOf(k.id)))
 					.filter((k) => !k.audience || held.has(k.audience))
+					// Without a channel to switch it on, a kind only for those who ask is not theirs.
+					.filter((k) => !k.optIn || anyReachable)
 					.map((k) => ({
 						id: k.id,
 						label: deps.translate(locale, k.label),
-						defaultChannels: k.defaultChannels
-							? [...k.defaultChannels]
-							: channels.filter((c) => c.onByDefault).map((c) => c.id),
+						defaultChannels: k.optIn
+							? []
+							: k.defaultChannels
+								? [...k.defaultChannels]
+								: channels.filter((c) => c.onByDefault).map((c) => c.id),
+						optIn: k.optIn === true,
+						group: k.group ?? 'everyday',
+						...(k.description && { description: deps.translate(locale, k.description) }),
+						...(k.link && {
+							link: { path: k.link.path, label: deps.translate(locale, k.link.label) },
+						}),
 					})),
-				channels: await Promise.all(
-					channels.map(async (c) => {
-						const available = await reachable(c, memberId, ctx.logger);
-						return {
-							id: c.id,
-							label: deps.translate(locale, c.label),
-							available,
-							...(!available && c.hint && { hint: deps.translate(locale, c.hint) }),
-						};
-					}),
-				),
-				prefs: await readPrefs(ctx.db, memberId),
+				channels: reach.map(({ c, available }) => ({
+					id: c.id,
+					label: deps.translate(locale, c.label),
+					available,
+					...(!available && c.hint && { hint: deps.translate(locale, c.hint) }),
+				})),
+				prefs,
 			};
 		},
 	});

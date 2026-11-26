@@ -29751,12 +29751,43 @@
 														"items": {
 															"type": "string"
 														}
+													},
+													"optIn": {
+														"type": "boolean"
+													},
+													"group": {
+														"type": "string",
+														"enum": [
+															"everyday",
+															"approvals",
+															"system"
+														]
+													},
+													"description": {
+														"type": "string"
+													},
+													"link": {
+														"type": "object",
+														"properties": {
+															"path": {
+																"type": "string"
+															},
+															"label": {
+																"type": "string"
+															}
+														},
+														"required": [
+															"path",
+															"label"
+														]
 													}
 												},
 												"required": [
 													"id",
 													"label",
-													"defaultChannels"
+													"defaultChannels",
+													"optIn",
+													"group"
 												]
 											}
 										},

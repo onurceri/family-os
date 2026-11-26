@@ -523,53 +523,81 @@ describe('reading and preferences', () => {
 				id: 'core.draftWaiting',
 				label: 'en|app:notify_kind_draft_waiting|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'approvals',
+				description: 'en|app:notify_kind_draft_waiting_description|',
 			},
 			{
 				id: 'core.draftDecided',
 				label: 'en|app:notify_kind_draft_decided|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'approvals',
 			},
 			{
 				id: 'core.backupFailed',
 				label: 'en|app:notify_kind_backup_failed|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'system',
 			},
 			{
 				id: 'core.backupRestored',
 				label: 'en|app:notify_kind_backup_restored|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'system',
 			},
 			{
 				id: 'core.extensionUpdates',
 				label: 'en|app:notify_kind_extension_updates|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'system',
 			},
 			{
 				id: 'core.productUpdate',
 				label: 'en|app:notify_kind_product_update|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'system',
+				description: 'en|app:notify_kind_product_update_description|',
 			},
 			{
 				id: 'core.aiAppConnected',
 				label: 'en|app:notify_kind_ai_app_connected|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'system',
 			},
 			{
 				id: 'core.aiAppDisconnected',
 				label: 'en|app:notify_kind_ai_app_disconnected|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'system',
 			},
 			{
 				id: 'core.autoApprovalStopped',
 				label: 'en|app:notify_kind_auto_approval_stopped|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'approvals',
 			},
 			{
 				id: 'notes.announced',
 				label: 'en|notes:notify_kind_announced|',
 				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'everyday',
 			},
-			{ id: 'notes.quiet', label: 'en|notes:notify_kind_quiet|', defaultChannels: ['telegram'] },
+			{
+				id: 'notes.quiet',
+				label: 'en|notes:notify_kind_quiet|',
+				defaultChannels: ['telegram'],
+				optIn: false,
+				group: 'everyday',
+			},
 		]);
 		expect(mine.channels).toEqual([
 			{ id: 'webpush', label: 'en|app:channel_webpush|', available: true },
@@ -603,6 +631,108 @@ describe('reading and preferences', () => {
 	});
 });
 
+describe('kinds only for those who ask', () => {
+	const evening = defineNotificationKind({
+		id: 'nudge.evening',
+		label: 'nudge:kind',
+		optIn: true,
+		// Ignored: nothing is on until the member switches it on.
+		defaultChannels: ['webpush'],
+	});
+	let o: TestKernel;
+	beforeEach(async () => {
+		o = await createTestKernel({
+			extensions: [defineTestExtension({ id: 'nudge', notifications: [evening] })],
+			channels: [web, tg],
+		});
+	});
+	afterEach(() => o.close());
+
+	const send = async (members: string[]) => {
+		await o.ctx.notify({
+			kind: evening.id,
+			to: { members },
+			title: { key: 'app:x' },
+		});
+		await o.worker.drain();
+	};
+	const inApp = async (actor: Parameters<TestKernel['runner']['invoke']>[2]) =>
+		(await o.route('core.listNotifications').call({ actor })).items as unknown[];
+	const kindsOf = async (actor: Parameters<TestKernel['runner']['invoke']>[2]) =>
+		(await o.route('core.getNotificationPreferences').call({ actor })).kinds as {
+			id: string;
+			defaultChannels: string[];
+		}[];
+
+	it('reaches nobody who has not switched it on, not even in the app', async () => {
+		const a = await o.member('admin');
+		await send([a.member.id]);
+		expect(web.sent).toEqual([]);
+		expect(tg.sent).toEqual([]);
+		expect(await inApp(a.actor)).toEqual([]);
+	});
+
+	it('reaches whoever switched on a channel, through that channel only', async () => {
+		const a = await o.member('admin');
+		const b = await o.member('member');
+		await o.runner.invoke(
+			'core.setNotificationPreferences',
+			{ kinds: { [evening.id]: { telegram: true } }, quietHours: null },
+			a.actor,
+		);
+		await send([a.member.id, b.member.id]);
+		expect(tg.sent.map((s) => s.memberId)).toEqual([a.member.id]);
+		expect(web.sent).toEqual([]);
+		expect(await inApp(a.actor)).toHaveLength(1);
+		expect(await inApp(b.actor)).toEqual([]);
+	});
+
+	it('stops once no switched-on channel can reach them, so nothing is left they cannot turn off', async () => {
+		const a = await o.member('admin');
+		await o.runner.invoke(
+			'core.setNotificationPreferences',
+			{ kinds: { [evening.id]: { telegram: true } }, quietHours: null },
+			a.actor,
+		);
+		tg.available = [];
+		await send([a.member.id]);
+		expect(tg.sent).toEqual([]);
+		expect(await inApp(a.actor)).toEqual([]);
+	});
+
+	it('starts with every channel off, and is listed only to someone who could switch it on', async () => {
+		const a = await o.member('admin');
+		expect((await kindsOf(a.actor)).find((k) => k.id === evening.id)).toMatchObject({
+			defaultChannels: [],
+		});
+		web.available = [];
+		tg.available = [];
+		expect((await kindsOf(a.actor)).map((k) => k.id)).not.toContain(evening.id);
+		// Kinds everyone gets in the app stay listed.
+		expect((await kindsOf(a.actor)).map((k) => k.id)).toContain('core.draftWaiting');
+	});
+
+	it('leaves other kinds as they were: the in-app record for everyone', async () => {
+		const a = await o.member('admin');
+		await o.runner.invoke(
+			'core.setNotificationPreferences',
+			{
+				kinds: { 'core.draftWaiting': { webpush: false, telegram: false } },
+				quietHours: null,
+			},
+			a.actor,
+		);
+		await o.ctx.notify({
+			kind: 'core.draftWaiting',
+			to: { members: [a.member.id] },
+			title: { key: 'app:x' },
+		});
+		await o.worker.drain();
+		expect(web.sent).toEqual([]);
+		expect(await inApp(a.actor)).toHaveLength(1);
+	});
+});
+
 describe('kinds', () => {
 	it('must be namespaced by their extension and unique', () => {
 		const kind = (id: string) => defineNotificationKind({ id, label: 'x:y' });
@@ -624,6 +754,74 @@ describe('kinds', () => {
 				notifications: [defineNotificationKind({ id: 'mine.thing', label: 'x:y', audience })],
 			});
 		expect(() => buildRegistry([ext('mine.nope')])).toThrow(/unknown capability/);
+	});
+
+	it('link only to a path inside the app', () => {
+		const linked = (path: string) =>
+			defineNotificationKind({ id: 'mine.thing', label: 'x:y', link: { path, label: 'x:z' } });
+		expect(linked('/mine?open=1').link?.path).toBe('/mine?open=1');
+		for (const path of ['https://example.com/', '//example.com', 'mine', '/\\example.com'])
+			expect(() => linked(path)).toThrow(/inside the app/);
+	});
+
+	it('come with their group, description and link, and whether they are only for those who ask', async () => {
+		const plain = defineNotificationKind({ id: 'mine.plain', label: 'mine:plain' });
+		const described = defineNotificationKind({
+			id: 'mine.evening',
+			label: 'mine:evening',
+			optIn: true,
+			description: 'mine:evening_description',
+			link: { path: '/mine?times=1', label: 'mine:evening_link' },
+		});
+		const approval = defineNotificationKind({
+			id: 'mine.asked',
+			label: 'mine:asked',
+			group: 'approvals',
+		});
+		const m = await createTestKernel({
+			extensions: [
+				defineTestExtension({ id: 'mine', notifications: [plain, described, approval] }),
+			],
+			channels: [web, tg],
+			translate: (locale, key) => `${locale}|${key}`,
+		});
+		try {
+			const a = await m.member('admin');
+			const { kinds } = await m.route('core.getNotificationPreferences').call({ actor: a.actor });
+			const byId = (id: string) => kinds.find((x: { id: string }) => x.id === id);
+			expect(byId('mine.plain')).toEqual({
+				id: 'mine.plain',
+				label: 'en|mine:plain',
+				defaultChannels: ['webpush', 'telegram'],
+				optIn: false,
+				group: 'everyday',
+			});
+			expect(byId('mine.evening')).toEqual({
+				id: 'mine.evening',
+				label: 'en|mine:evening',
+				defaultChannels: [],
+				optIn: true,
+				group: 'everyday',
+				description: 'en|mine:evening_description',
+				link: { path: '/mine?times=1', label: 'en|mine:evening_link' },
+			});
+			expect(byId('mine.asked')).toMatchObject({ group: 'approvals', optIn: false });
+			// Core's own kinds: approvals, and the account and the server.
+			const groupOf = (id: string) => byId(id)?.group;
+			for (const id of ['core.draftWaiting', 'core.draftDecided', 'core.autoApprovalStopped'])
+				expect(groupOf(id)).toBe('approvals');
+			for (const id of [
+				'core.backupFailed',
+				'core.backupRestored',
+				'core.extensionUpdates',
+				'core.productUpdate',
+				'core.aiAppConnected',
+				'core.aiAppDisconnected',
+			])
+				expect(groupOf(id)).toBe('system');
+		} finally {
+			await m.close();
+		}
 	});
 });
 

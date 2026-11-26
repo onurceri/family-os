@@ -2,7 +2,7 @@
 	import { dateTimeFormat } from '#lib/format.svelte.js';
 	import { type paths } from '@famos/api-client';
 	import { Button } from '@famos/ui/button';
-	import { Card, Section } from '@famos/ui/famos';
+	import { Row } from '@famos/ui/famos';
 	import { untrack } from 'svelte';
 	import { api } from '#lib/api.js';
 	import { runAction } from '#lib/run-action.js';
@@ -15,7 +15,10 @@
 	type Code =
 		paths['/api/v1/telegram/link']['post']['responses'][200]['content']['application/json'];
 
-	/** Linking one's Telegram account; shown once an admin has connected a bot. */
+	/**
+	 * Linking one's Telegram account, as a row of the card of ways to be reached; shown once an admin
+	 * has connected a bot. While a code waits, it opens under the row.
+	 */
 	let { onchanged }: { onchanged: () => void } = $props();
 
 	let link = $state<Link | null>(null);
@@ -82,49 +85,48 @@
 </script>
 
 {#if link?.available}
-	<Section label={t('telegram_link_title')}>
-		<Card rows>
-			<div class="grid gap-3 px-4 py-3">
-				{#if link.linked}
-					<p class="font-medium">
-						{t('telegram_link_status', { who: link.username ? ` · @${link.username}` : '' })}
-					</p>
-					<div>
-						<Button variant="outline" disabled={busy} onclick={unlink}
-							>{t('telegram_unlink')}</Button
-						>
-					</div>
-				{:else if code}
-					<p class="text-ink-soft text-sm">{t('telegram_link_code')}</p>
-					<p class="font-mono text-2xl font-bold tracking-widest" data-testid="telegram-code">
-						{code.code}
-					</p>
-					<div>
-						<Button href={code.url} target="_blank" rel="noopener noreferrer">
-							{t('telegram_link_open')}
-						</Button>
-					</div>
-					<p class="text-ink-soft text-sm">{t('telegram_link_steps', { code: code.code })}</p>
-					<small class="text-ink-soft text-xs">
-						{t('telegram_link_expires', { time: until(code.expiresAt) })}
-					</small>
-				{:else}
-					<p class="text-ink-soft text-sm">{t('telegram_link_hint')}</p>
-					<div>
-						{#if session.me?.fullSignIn}
-							<Button variant="outline" disabled={busy} onclick={createCode}
-								>{t('telegram_link_button')}</Button
-							>
-						{:else}
-							<p class="text-ink-soft text-sm" data-testid="telegram-password-needed">
-								{t('sign_in_password_for_keys')}
-							</p>
-						{/if}
-					</div>
+	<div>
+		<Row
+			wrap
+			title={t('telegram_link_title')}
+			meta={link.linked
+				? t('telegram_link_status', { who: link.username ? ` · @${link.username}` : '' })
+				: t('telegram_link_hint')}
+		>
+			{#snippet trail()}
+				{#if link?.linked}
+					<Button variant="outline" size="sm" disabled={busy} onclick={unlink}
+						>{t('telegram_unlink')}</Button
+					>
+				{:else if !code && session.me?.fullSignIn}
+					<Button variant="outline" size="sm" disabled={busy} onclick={createCode}
+						>{t('telegram_link_button')}</Button
+					>
 				{/if}
-				<p class="text-ink-soft text-xs">{t('telegram_link_privacy')}</p>
-				{#if error}<p class="text-sm font-semibold" role="alert">{error}</p>{/if}
-			</div>
-		</Card>
-	</Section>
+			{/snippet}
+		</Row>
+		<div class="grid gap-2 px-3 pb-3">
+			{#if !link.linked && code}
+				<p class="text-ink-soft text-sm">{t('telegram_link_code')}</p>
+				<p class="font-mono text-2xl font-bold tracking-widest" data-testid="telegram-code">
+					{code.code}
+				</p>
+				<div>
+					<Button href={code.url} target="_blank" rel="noopener noreferrer">
+						{t('telegram_link_open')}
+					</Button>
+				</div>
+				<p class="text-ink-soft text-sm">{t('telegram_link_steps', { code: code.code })}</p>
+				<small class="text-ink-soft text-xs">
+					{t('telegram_link_expires', { time: until(code.expiresAt) })}
+				</small>
+			{:else if !link.linked && !session.me?.fullSignIn}
+				<p class="text-ink-soft text-sm" data-testid="telegram-password-needed">
+					{t('sign_in_password_for_keys')}
+				</p>
+			{/if}
+			<p class="text-ink-soft text-xs">{t('telegram_link_privacy')}</p>
+			{#if error}<p class="text-[0.8125rem] font-semibold" role="alert">{error}</p>{/if}
+		</div>
+	</div>
 {/if}

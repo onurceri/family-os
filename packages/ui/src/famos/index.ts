@@ -114,6 +114,7 @@ export { default as Sheet } from './Sheet.svelte';
 export { type DiscardLabels, default as SidePanel } from './SidePanel.svelte';
 export { default as Step } from './Step.svelte';
 export { default as Steps } from './Steps.svelte';
+export { default as Switch } from './Switch.svelte';
 export { default as SwitchRow } from './SwitchRow.svelte';
 export { forgetSharedReads, sharedRead } from './shared-read.js';
 export { firstName, shortName, withShortNames } from './short-names.js';

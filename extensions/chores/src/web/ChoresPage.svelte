@@ -17,14 +17,16 @@
 		Section,
 		Segmented,
 		readFirst,
+		Row,
 		SidePanel,
 		ViewOnly,
 		openPath,
 	} from '@famos/ui/famos';
-	import { Plus } from '@lucide/svelte';
+	import { Bell, ChevronRight, Plus } from '@lucide/svelte';
 	import type { Chore } from '../contract/index.js';
 	import ChoreForm from './ChoreForm.svelte';
 	import ChoreRow from './ChoreRow.svelte';
+	import ReminderTimes from './ReminderTimes.svelte';
 	import {
 		archiveChore,
 		createChore,
@@ -52,6 +54,8 @@
 	} from './form.js';
 	import { useChores } from './i18n.js';
 	import { hasOpenChore } from './open-chores.js';
+	import { formatTimes, mineState, type PreferencesView } from './reminder-times.js';
+	import { api } from './api.js';
 
 	/**
 	 * The Chores page: what is due today, what is overdue and what is coming, with whose turn it is.
@@ -111,6 +115,50 @@
 	const mayArchive = $derived(app.access('chores.archiveChore') !== 'no');
 	const canDo = (c: Chore) =>
 		mayTick && (holdsEdit || c.assigneeId === null || c.assigneeId === me);
+
+	// The daily reminder of open chores: when it comes for the family, and whether it reaches the
+	// viewer. Its panel is in the address (`?reminder=1`), so Back closes it and links can open it.
+	const reminderOpen = $derived(app.query().get('reminder') === '1');
+	const setReminderOpen = (on: boolean) =>
+		app.setQuery({ reminder: on ? '1' : null }, { replace: !on });
+	const mayEditTimes = $derived(app.access('chores.setLeftTodayTimes') === 'apply');
+	// A display shows the list only: the reminder is for people, who each switch it on or off.
+	const forPerson = $derived(app.me() !== null);
+	let reminderTimes = $state<string[] | null>(null);
+	let preferences = $state<PreferencesView | null>(null);
+	const mine = $derived(mineState(preferences));
+	async function loadReminder() {
+		if (!forPerson) return;
+		const [settings, prefs] = await Promise.all([
+			api.GET('/api/v1/chores/settings'),
+			// Without the right to receive notifications there is nothing to say about "for you".
+			app.can('core.notifications.receive')
+				? api.GET('/api/v1/core/notifications/preferences')
+				: Promise.resolve(null),
+		]);
+		reminderTimes = settings.data ? [...settings.data.leftTodayTimes] : null;
+		preferences = prefs?.data ?? null;
+	}
+	$effect(() => {
+		void loadReminder();
+		// Switched on or off in another tab (the notification settings): read again on return.
+		const onfocus = () => void loadReminder();
+		window.addEventListener('focus', onfocus);
+		return () => window.removeEventListener('focus', onfocus);
+	});
+	const reminderMeta = $derived.by(() => {
+		if (!reminderTimes) return undefined;
+		const times = t('reminder_daily_at', {
+			times: formatTimes(reminderTimes, app.dateLocale(), app.hourCycle()),
+		});
+		if (!mine) return times;
+		const words = {
+			on: t('reminder_mine_on'),
+			off: t('reminder_mine_off'),
+			'no-channel': t('reminder_mine_no_channel'),
+		};
+		return `${times} · ${words[mine]}`;
+	});
 
 	let onlyMine = $state(false);
 	const visible = $derived(
@@ -304,6 +352,10 @@
 	{/if}
 {/snippet}
 
+{#snippet headActions()}
+	{#if !empty}{@render add()}{/if}
+{/snippet}
+
 {#snippet archiveButton()}
 	{#if mayArchive}
 		<ConfirmButton
@@ -440,10 +492,30 @@
 				</ul>
 			</Section>
 		{/if}
+		{#if forPerson && reminderMeta}
+			<Section label={t('reminder_section')}>
+				<div class="grid grid-cols-[repeat(auto-fill,minmax(min(22rem,100%),1fr))] gap-1.5">
+					<Row
+						tile
+						idle
+						title={t('reminder_row_title')}
+						meta={reminderMeta}
+						onclick={() => setReminderOpen(true)}
+						data-testid="chores-reminder"
+					>
+						{#snippet lead()}<Bell class="size-[18px]" aria-hidden="true" />{/snippet}
+						{#snippet trail()}<ChevronRight
+								class="text-ink-soft size-3.5"
+								aria-hidden="true"
+							/>{/snippet}
+					</Row>
+				</div>
+			</Section>
+		{/if}
 	</div>
 {/snippet}
 
-<ListDetail title={t('title')} actions={empty ? undefined : add} selected={false}>
+<ListDetail title={t('title')} actions={headActions} selected={false}>
 	{#snippet list()}
 		{#if empty}
 			<EmptyState art="chores" title={t('empty')} hint={mayAdd ? t('empty_hint') : undefined}>
@@ -491,5 +563,16 @@
 >
 	{@render formCard()}
 </SidePanel>
+
+{#if forPerson}
+	<ReminderTimes
+		open={reminderOpen}
+		onclose={() => setReminderOpen(false)}
+		savedTimes={reminderTimes}
+		mayEdit={mayEditTimes}
+		{mine}
+		onsaved={(times) => (reminderTimes = times)}
+	/>
+{/if}
 
 <RepeatScope open={asking} words={scopeWords} onpick={pick} onclose={() => (asking = false)} />

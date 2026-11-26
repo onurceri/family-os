@@ -4,6 +4,7 @@ import { defineNotificationKind } from '@famos/sdk';
 export const backupFailed = defineNotificationKind({
 	id: 'core.backupFailed',
 	label: 'app:notify_kind_backup_failed',
+	group: 'system',
 	audience: 'core.settings.manage',
 });
 
@@ -11,6 +12,7 @@ export const backupFailed = defineNotificationKind({
 export const backupRestored = defineNotificationKind({
 	id: 'core.backupRestored',
 	label: 'app:notify_kind_backup_restored',
+	group: 'system',
 	audience: 'core.settings.manage',
 });
 
@@ -18,6 +20,7 @@ export const backupRestored = defineNotificationKind({
 export const extensionUpdates = defineNotificationKind({
 	id: 'core.extensionUpdates',
 	label: 'app:notify_kind_extension_updates',
+	group: 'system',
 	audience: 'core.extensions.manage',
 });
 
@@ -28,6 +31,8 @@ export const extensionUpdates = defineNotificationKind({
 export const productUpdate = defineNotificationKind({
 	id: 'core.productUpdate',
 	label: 'app:notify_kind_product_update',
+	description: 'app:notify_kind_product_update_description',
+	group: 'system',
 	audience: 'core.extensions.manage',
 });
 
@@ -35,6 +40,7 @@ export const productUpdate = defineNotificationKind({
 export const draftDecided = defineNotificationKind({
 	id: 'core.draftDecided',
 	label: 'app:notify_kind_draft_decided',
+	group: 'approvals',
 	audience: 'core.drafts.propose',
 });
 
@@ -42,5 +48,7 @@ export const draftDecided = defineNotificationKind({
 export const draftWaiting = defineNotificationKind({
 	id: 'core.draftWaiting',
 	label: 'app:notify_kind_draft_waiting',
+	description: 'app:notify_kind_draft_waiting_description',
+	group: 'approvals',
 	audience: 'core.drafts.approve',
 });

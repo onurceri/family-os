@@ -1,7 +1,11 @@
 import { addVersion, bumpParentVersion, type DbExecutor, type Migrations } from '@famos/sdk';
 import type { Recurrence } from '@famos/time';
 import { type Generated, type Selectable, sql } from 'kysely';
-import type { Rotation } from '../contract/index.ts';
+import {
+	DEFAULT_LEFT_TODAY_TIMES,
+	LeftTodayTimesSchema,
+	type Rotation,
+} from '../contract/index.ts';
 
 /** Storage for chores (tables prefixed `chores_`). */
 export type ChoresTables = {
@@ -41,6 +45,13 @@ export type ChoresTables = {
 		prev_assignee_id: string | null;
 		done_at: number;
 		undone_at: number | null;
+	};
+	/** A single row (`id = 'main'`). */
+	chores_settings: {
+		id: string;
+		/** JSON array of `HH:MM` times of the evening count, in order. */
+		left_today_times: string;
+		updated_at: number;
 	};
 };
 export type ChoreRow = Selectable<ChoresTables['chores_chores']>;
@@ -126,9 +137,35 @@ export const migrations: Migrations = {
 			});
 		},
 	},
+	'0003_settings': {
+		async up(db) {
+			await db.schema
+				.createTable('chores_settings')
+				.addColumn('id', 'text', (c) => c.primaryKey())
+				.addColumn('left_today_times', 'text', (c) => c.notNull())
+				.addColumn('updated_at', 'integer', (c) => c.notNull())
+				.modifyEnd(sql`strict`)
+				.execute();
+		},
+	},
 };
 
 export const tables = (db: DbExecutor) => db.withTables<ChoresTables>();
 
 export const parseRecurrence = (row: Pick<ChoreRow, 'recurrence'>): Recurrence | null =>
 	row.recurrence ? (JSON.parse(row.recurrence) as Recurrence) : null;
+
+/** The id of the one settings row. */
+export const SETTINGS_ROW = 'main';
+
+/** The times of the evening count: what the family saved, else the default. */
+export async function loadLeftTodayTimes(db: DbExecutor): Promise<string[]> {
+	const row = await tables(db)
+		.selectFrom('chores_settings')
+		.select('left_today_times')
+		.where('id', '=', SETTINGS_ROW)
+		.executeTakeFirst();
+	if (!row) return DEFAULT_LEFT_TODAY_TIMES;
+	const parsed = LeftTodayTimesSchema.safeParse(JSON.parse(row.left_today_times));
+	return parsed.success ? parsed.data : DEFAULT_LEFT_TODAY_TIMES;
+}

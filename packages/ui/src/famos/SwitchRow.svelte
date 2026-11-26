@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import Switch from './Switch.svelte';
 
 	/**
 	 * An on/off setting: label, optional hint and a switch. A native checkbox with role="switch",
@@ -49,21 +50,14 @@
 {/snippet}
 
 {#snippet control()}
-	<input
+	<Switch
 		{id}
-		type="checkbox"
-		role="switch"
-		class="peer sr-only"
 		bind:checked
 		{disabled}
-		aria-label={onopen ? label : undefined}
-		aria-describedby={onopen && hint ? `${id}-hint` : undefined}
-		onchange={() => onchange?.(checked)}
+		label={onopen ? label : undefined}
+		describedby={onopen && hint ? `${id}-hint` : undefined}
+		{onchange}
 	/>
-	<span
-		aria-hidden="true"
-		class="bg-ink-soft/35 peer-checked:bg-now peer-focus-visible:ring-ink after:bg-surface after:shadow-lit relative h-7 w-12 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 after:absolute after:top-1 after:left-1 after:size-5 after:rounded-full after:transition-transform peer-checked:after:translate-x-5 motion-reduce:transition-none motion-reduce:after:transition-none"
-	></span>
 {/snippet}
 
 {#snippet row()}
